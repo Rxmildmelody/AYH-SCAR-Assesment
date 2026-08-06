@@ -2,152 +2,224 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แบบประเมินอาการแพ้ยา (SCARs)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>แบบประเมินอาการแพ้ยา</title>
+    <!-- เรียกใช้ Tailwind CSS สำหรับ UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- เรียกใช้ LINE LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+        /* ซ่อนส่วนอัปโหลดรูปภาพค่าเริ่มต้น */
+        #image-upload-section { display: none; }
     </style>
 </head>
-<body class="p-4">
+<body class="bg-gray-50 text-gray-800 antialiased">
 
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-        <!-- Header -->
-        <div class="bg-blue-600 p-4 text-white text-center">
-            <i class="fa-solid fa-file-medical text-3xl mb-2"></i>
-            <h1 class="text-xl font-bold">แบบประเมินอาการแพ้ยา</h1>
-            <p class="text-sm opacity-90">ระบบเฝ้าระวังอาการแพ้ยารุนแรง (SCARs)</p>
+    <!-- Container หลัก (ตั้งความกว้างสูงสุดให้ออกแบบมาพอดีกับหน้าจอมือถือ) -->
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-md">
+        
+        <!-- Header: โปรไฟล์ LINE -->
+        <div class="bg-blue-600 p-6 text-center text-white rounded-b-3xl shadow-sm">
+            <div class="relative w-24 h-24 mx-auto mb-3">
+                <img id="profile-img" src="https://via.placeholder.com/150" alt="Profile" class="rounded-full border-4 border-white shadow-lg object-cover w-full h-full">
+            </div>
+            <h1 id="profile-name" class="text-xl font-bold">กำลังโหลด...</h1>
+            <p class="text-blue-100 text-sm mt-1">ระบบเฝ้าระวังอาการแพ้ยา (SCARs)</p>
         </div>
 
-        <!-- User Profile (ดึงจาก LINE) -->
-        <div id="profileBox" class="p-4 border-b border-slate-100 flex items-center gap-3 hidden">
-            <img id="userImage" src="" alt="Profile" class="w-10 h-10 rounded-full border border-slate-200">
-            <div>
-                <p class="text-sm text-slate-500">บัญชีผู้ใช้ LINE</p>
-                <p id="userName" class="font-semibold text-slate-800"></p>
-            </div>
+        <!-- Form Section -->
+        <div class="p-6">
+            <form id="assessment-form" class="space-y-6">
+                
+                <!-- ข้อมูลคนไข้ -->
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <label class="block text-sm font-semibold text-blue-800">รหัสประจำตัวผู้ป่วย (HN)</label>
+                    <input type="text" id="hn-input" name="hn" readonly 
+                           class="mt-1 w-full bg-transparent text-lg font-bold text-blue-900 border-none focus:ring-0 p-0 cursor-not-allowed">
+                </div>
+
+                <div class="border-t border-gray-200 pt-4">
+                    <h2 class="font-bold text-gray-800 mb-4 text-lg">แบบประเมินอาการ (กรุณาตอบตามจริง)</h2>
+                    
+                    <!-- คำถามที่ 1 -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium mb-2 text-gray-700">1. มีผื่นแดง ตุ่มน้ำพอง หรือผิวหนังลอก?</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-lg border w-full">
+                                <input type="radio" name="symp1" value="no" class="symptom-radio w-4 h-4 text-blue-600" required>
+                                <span>ไม่มี</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-lg border w-full">
+                                <input type="radio" name="symp1" value="yes" class="symptom-radio w-4 h-4 text-red-500">
+                                <span class="text-red-600 font-medium">มีอาการ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- คำถามที่ 2 -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium mb-2 text-gray-700">2. มีแผลในปาก เจ็บตา หรือเคืองตา?</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-lg border w-full">
+                                <input type="radio" name="symp2" value="no" class="symptom-radio w-4 h-4 text-blue-600" required>
+                                <span>ไม่มี</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-lg border w-full">
+                                <input type="radio" name="symp2" value="yes" class="symptom-radio w-4 h-4 text-red-500">
+                                <span class="text-red-600 font-medium">มีอาการ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- คำถามที่ 3 -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium mb-2 text-gray-700">3. มีไข้ หรือเจ็บแสบตามผิวหนัง?</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-lg border w-full">
+                                <input type="radio" name="symp3" value="no" class="symptom-radio w-4 h-4 text-blue-600" required>
+                                <span>ไม่มี</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-lg border w-full">
+                                <input type="radio" name="symp3" value="yes" class="symptom-radio w-4 h-4 text-red-500">
+                                <span class="text-red-600 font-medium">มีอาการ</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ส่วนอัปโหลดรูปภาพ (จะแสดงเมื่อมีอาการ) -->
+                <div id="image-upload-section" class="bg-red-50 p-4 rounded-xl border border-red-200 animate-pulse-once">
+                    <label class="block text-sm font-bold text-red-700 mb-2">
+                        ⚠️ พบอาการเสี่ยง กรุณาถ่ายรูปหรืออัปโหลดรูปภาพอาการ
+                    </label>
+                    <input type="file" id="symptom-image" accept="image/*" capture="environment" 
+                           class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200">
+                    <p class="text-xs text-red-500 mt-2">* ข้อมูลภาพถ่ายจะถูกเก็บเป็นความลับเพื่อประเมินโดยเภสัชกร</p>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition duration-200 shadow-md">
+                    ส่งแบบประเมิน
+                </button>
+            </form>
         </div>
-
-        <!-- Form -->
-        <form id="assessmentForm" class="p-5 space-y-4">
-            <!-- ซ่อน HN ไว้ เพราะดึงมาจาก URL ตอนสแกน QR -->
-            <input type="hidden" id="patientHN">
-
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">1. ท่านมีผื่นแดง ตุ่มน้ำพอง ตามผิวหนังหรือไม่?</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2"><input type="radio" name="symp1" value="yes" class="text-blue-600"> มี</label>
-                    <label class="flex items-center gap-2"><input type="radio" name="symp1" value="no" class="text-blue-600" checked> ไม่มี</label>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">2. มีอาการเจ็บตา ตาแดง ปากเปื่อย เยื่อบุอักเสบ หรือไม่?</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2"><input type="radio" name="symp2" value="yes" class="text-blue-600"> มี</label>
-                    <label class="flex items-center gap-2"><input type="radio" name="symp2" value="no" class="text-blue-600" checked> ไม่มี</label>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">3. มีไข้สูง ปวดเมื่อยตามตัวคล้ายไข้หวัดใหญ่ หรือไม่?</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2"><input type="radio" name="symp3" value="yes" class="text-blue-600"> มี</label>
-                    <label class="flex items-center gap-2"><input type="radio" name="symp3" value="no" class="text-blue-600" checked> ไม่มี</label>
-                </div>
-            </div>
-
-            <button type="submit" id="submitBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition">
-                ส่งแบบประเมิน
-            </button>
-        </form>
     </div>
 
     <script>
-        // ==========================================
-        // ⚠️ 1. ใส่ LIFF ID ที่ได้จาก LINE Developer
-        // ==========================================
-        const MY_LIFF_ID = "2010995687-3szXwNXK";
-        
-        // ==========================================
-        // ⚠️ 2. ใส่ Web App URL ของ Google Apps Script อันเดิมของคุณ
-        // ==========================================
-        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBDF7UHDU6o9ZgRm2Pj-vCXsdjgX_0RLOXBpPv4AaPKSwQuuDSOO9Vk3pog2LS866x/exec";
+        // ใส่ LIFF ID ของคุณที่นี่
+        const LIFF_ID = "https://liff.line.me/2010995687-3szXwNXK?hn="; 
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzBDF7UHDU6o9ZgRm2Pj-vCXsdjgX_0RLOXBpPv4AaPKSwQuuDSOO9Vk3pog2LS866x/exec";
 
-        async function initializeLiff() {
+        // ลอจิกการทำงานเบื้องต้นเมื่อโหลดหน้าเว็บ
+        document.addEventListener("DOMContentLoaded", async () => {
+            // 1. จัดการ HN จาก URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const hn = urlParams.get('hn') || "ไม่ระบุ HN";
+            document.getElementById('hn-input').value = hn;
+
+            // 2. เริ่มต้น LIFF SDK
             try {
-                await liff.init({ liffId: MY_LIFF_ID });
+                await liff.init({ liffId: LIFF_ID });
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
-                    document.getElementById('userName').innerText = profile.displayName;
-                    document.getElementById('userImage').src = profile.pictureUrl;
-                    document.getElementById('profileBox').classList.remove('hidden');
-                    
-                    // ดึง parameter 'hn' จาก URL ที่แนบมากับ QR Code
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const hn = urlParams.get('hn');
-                    if(hn) {
-                        document.getElementById('patientHN').value = hn;
-                    }
+                    document.getElementById('profile-name').textContent = profile.displayName;
+                    document.getElementById('profile-img').src = profile.pictureUrl || "https://via.placeholder.com/150";
                 } else {
-                    liff.login();
+                    // ถ้ายืนยันจะให้ล็อกอินผ่าน LINE เสมอ ให้เปิด Comment บรรทัดล่าง
+                    // liff.login();
                 }
-            } catch (err) {
-                console.error('LIFF Error:', err);
-            }
-        }
-
-        document.getElementById('assessmentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่งข้อมูล...';
-            btn.disabled = true;
-
-            const hn = document.getElementById('patientHN').value || "ไม่ระบุ";
-            const symp1 = document.querySelector('input[name="symp1"]:checked').value;
-            const symp2 = document.querySelector('input[name="symp2"]:checked').value;
-            const symp3 = document.querySelector('input[name="symp3"]:checked').value;
-            
-            // คำนวณความเสี่ยงเบื้องต้น (ถ้ามีข้อไหนตอบ yes คือเสี่ยง)
-            const isRisk = (symp1 === 'yes' || symp2 === 'yes' || symp3 === 'yes') ? "เสี่ยงสูง" : "ปกติ";
-
-            const payload = {
-                action: 'submit_assessment',
-                hn: hn,
-                symp1: symp1,
-                symp2: symp2,
-                symp3: symp3,
-                risk: isRisk
-            };
-
-            try {
-                // เปลี่ยนไปใช้ no-cors เพื่อแก้ปัญหาบราวเซอร์บล็อกการส่งข้อมูลข้ามโดเมน
-                await fetch(GOOGLE_APP_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // เพิ่มบรรทัดนี้สำคัญมาก!
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                });
-                
-                // ในโหมด no-cors เราจะอ่านค่า response.json() ตรงๆ ไม่ได้ 
-                // แต่ถ้า fetch ไม่ error ให้ถือว่าส่งสำเร็จได้เลย
-                alert('ส่งแบบประเมินเรียบร้อยแล้ว ขอบคุณครับ');
-                liff.closeWindow(); 
-                
             } catch (error) {
-                console.error("Fetch error:", error);
-                alert('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง');
-                btn.innerHTML = 'ส่งแบบประเมิน';
-                btn.disabled = false;
+                console.error("LIFF Init Error:", error);
             }
         });
 
-        // เริ่มต้นการทำงานของ LIFF
-        initializeLiff();
+        // ลอจิกตรวจสอบการแสดงผลช่องอัปโหลดรูปภาพ
+        const radioButtons = document.querySelectorAll('.symptom-radio');
+        const imageSection = document.getElementById('image-upload-section');
+        const imageInput = document.getElementById('symptom-image');
+
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', () => {
+                // เช็คว่ามีข้อไหนตอบ yes หรือไม่
+                const hasSymptoms = document.querySelector('input[name="symp1"]:checked')?.value === 'yes' ||
+                                    document.querySelector('input[name="symp2"]:checked')?.value === 'yes' ||
+                                    document.querySelector('input[name="symp3"]:checked')?.value === 'yes';
+                
+                if (hasSymptoms) {
+                    imageSection.style.display = 'block';
+                    imageInput.required = true; // บังคับให้อัปโหลด
+                } else {
+                    imageSection.style.display = 'none';
+                    imageInput.required = false;
+                    imageInput.value = ""; // เคลียร์รูปภาพถ้าเปลี่ยนใจ
+                }
+            });
+        });
+
+        // ลอจิกการส่งฟอร์ม (แปลงภาพเป็น Base64 แล้วส่งให้ GAS)
+        document.getElementById('assessment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = "กำลังส่งข้อมูล...";
+
+            // คำนวณความเสี่ยงเบื้องต้น (risk)
+            const symp1 = document.querySelector('input[name="symp1"]:checked').value;
+            const symp2 = document.querySelector('input[name="symp2"]:checked').value;
+            const symp3 = document.querySelector('input[name="symp3"]:checked').value;
+            let risk = (symp1 === 'yes' || symp2 === 'yes' || symp3 === 'yes') ? 'high' : 'low';
+
+            let payload = {
+                action: 'submit_assessment',
+                hn: document.getElementById('hn-input').value,
+                symp1: symp1,
+                symp2: symp2,
+                symp3: symp3,
+                risk: risk,
+                imageBase64: null,
+                mimeType: null
+            };
+
+            // จัดการรูปภาพถ้ามีการอัปโหลด
+            if (imageInput.files && imageInput.files[0]) {
+                const file = imageInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = async function(event) {
+                    // ตัด Header ของ Data URL ออก (เช่น 'data:image/jpeg;base64,')
+                    const base64String = event.target.result.split(',')[1];
+                    payload.imageBase64 = base64String;
+                    payload.mimeType = file.type;
+                    
+                    await postDataToGAS(payload);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                await postDataToGAS(payload);
+            }
+        });
+
+        // ฟังก์ชันส่ง POST ไปยัง Google Apps Script
+        async function postDataToGAS(payload) {
+            try {
+                // ปกติ GAS Web App จะต้องส่งด้วย { redirect: "follow", mode: "no-cors" } 
+                // หรือใช้ Content-Type: text/plain เพื่อป้องกัน CORS issue จาก Browser
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                alert('ส่งข้อมูลการประเมินเรียบร้อยแล้ว');
+                if (liff.isInClient()) {
+                    liff.closeWindow(); // ปิดหน้าต่าง LINE ทันที
+                }
+            } catch (error) {
+                console.error("Error sending data:", error);
+                alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+                document.getElementById('submit-btn').disabled = false;
+                document.getElementById('submit-btn').textContent = "ส่งแบบประเมิน";
+            }
+        }
     </script>
 </body>
 </html>
