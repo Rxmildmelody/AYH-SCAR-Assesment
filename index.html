@@ -236,39 +236,48 @@
         }
 
         // ==========================================
-        // 3. ระบบจัดการรูปภาพ 
+        // ระบบจัดการรูปภาพ (พร้อมบีบอัดอัตโนมัติก่อนส่ง)
         // ==========================================
         function handlePhotoUpload(event, stepNum) {
             const file = event.target.files[0];
             if (!file) return;
 
-            if(file.size > 5 * 1024 * 1024) {
-                alert("ขนาดรูปใหญ่เกินไป กรุณาถ่ายใหม่ให้มีขนาดเล็กลงครับ (ไม่เกิน 5MB)");
-                return;
-            }
-
             const reader = new FileReader();
             reader.onload = function(e) {
-                const base64Str = e.target.result;
-                const qId = questions[stepNum - 1].id;
-                photos[qId] = base64Str; 
-                
-                document.getElementById(`preview-img-${stepNum}`).src = base64Str;
-                document.getElementById(`preview-container-${stepNum}`).classList.remove('hidden');
-                document.getElementById(`photo-warning-${stepNum}`).classList.add('hidden');
+                // สร้างออบเจกต์รูปภาพจำลองขึ้นมา
+                const img = new Image();
+                img.onload = function() {
+                    // สร้าง Canvas เพื่อทำการย่อรูป
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // กำหนดความกว้างสูงสุดแค่ 800px ก็พอสำหรับดูอาการ
+                    let scaleSize = MAX_WIDTH / img.width;
+                    
+                    // ถ้ารูปเดิมเล็กกว่า 800px อยู่แล้ว ไม่ต้องขยาย
+                    if(scaleSize > 1) scaleSize = 1; 
+
+                    canvas.width = img.width * scaleSize;
+                    canvas.height = img.height * scaleSize;
+
+                    // วาดรูปลง Canvas ด้วยขนาดใหม่
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // แปลงกลับเป็น Base64 พร้อมบีบอัดคุณภาพเหลือ 70% (0.7)
+                    // รูปที่ได้จะมีขนาดเล็กลงมากๆ (ประมาณ 100-200KB)
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                    // เก็บรูปลงระบบ
+                    const qId = questions[stepNum - 1].id;
+                    photos[qId] = compressedBase64; 
+                    
+                    // แสดงรูปตัวอย่างให้คนไข้ดู
+                    document.getElementById(`preview-img-${stepNum}`).src = compressedBase64;
+                    document.getElementById(`preview-container-${stepNum}`).classList.remove('hidden');
+                    document.getElementById(`photo-warning-${stepNum}`).classList.add('hidden');
+                }
+                img.src = e.target.result;
             }
             reader.readAsDataURL(file);
-        }
-
-        function removePhoto(stepNum) {
-            const qId = questions[stepNum - 1].id;
-            photos[qId] = ''; 
-            
-            document.getElementById(`preview-container-${stepNum}`).classList.add('hidden');
-            document.getElementById(`preview-img-${stepNum}`).src = '';
-            
-            const fileInput = document.querySelector(`#photo-section-${stepNum} input[type=file]`);
-            if(fileInput) fileInput.value = "";
         }
 
         // ==========================================
