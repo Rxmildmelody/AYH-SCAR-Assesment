@@ -274,7 +274,11 @@
             const fileInput = document.querySelector(`#photo-section-${stepNum} input[type=file]`);
             if(fileInput) fileInput.value = "";
         }
-
+            <!-- ช่องกรอกอาการเพิ่มเติม (แทรกก่อนปุ่ม ถัดไป) -->
+                    <div class="mt-4 mb-4">
+                        <label class="block text-sm font-bold text-slate-600 mb-2">ระบุอาการเพิ่มเติม (ถ้ามี):</label>
+                        <textarea id="extra-symp-${stepNum}" rows="2" placeholder="เช่น คันตามตัว, หน้ามืด..." class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition"></textarea>
+                    </div>
         // ==========================================
         // 4. ส่งข้อมูลและการแสดงหน้า Loading
         // ==========================================
@@ -285,7 +289,7 @@
             if (answers.symp3 === 'yes') yesCount++;
             if (answers.symp4 === 'yes') yesCount++;
 
-            const isRisk = (yesCount >= 2) ? "เสี่ยงสูง" : "ปกติ";
+            const isRisk = (yesCount >= 1) ? "เสี่ยงสูง" : "ปกติ";
 
             const payload = {
                 action: 'submit_assessment',
