@@ -291,11 +291,15 @@
 
             const isRisk = (yesCount >= 1) ? "เสี่ยงสูง" : "ปกติ";
 
+            // ดึงข้อความจากหน้าคำถามสุดท้าย (ข้อ 4) มาส่ง
+            const extraText = document.getElementById('extra-symp-4') ? document.getElementById('extra-symp-4').value : "-";
+
             const payload = {
                 action: 'submit_assessment',
                 hn: patientHN,
                 symp1: answers.symp1, symp2: answers.symp2, symp3: answers.symp3, symp4: answers.symp4,
                 photo2: photos.symp2, photo3: photos.symp3, photo4: photos.symp4,
+                extraSymp: extraText, // เพิ่มบรรทัดนี้เข้ามา
                 risk: isRisk
             };
 
