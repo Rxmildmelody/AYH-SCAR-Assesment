@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -14,9 +14,30 @@
         .step-active { display: block; animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         input[type="file"] { display: none; }
+        /* แอนิเมชันแถบโหลด */
+        .progress-stripe {
+            background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent);
+            background-size: 1rem 1rem;
+            animation: stripe-motion 1s linear infinite;
+        }
+        @keyframes stripe-motion { 0% { background-position: 1rem 0; } 100% { background-position: 0 0; } }
     </style>
 </head>
 <body class="flex flex-col h-screen">
+
+    <!-- 🌟 หน้าจอ Loading (จะโชว์ตอนกดส่งข้อมูล) 🌟 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex-col items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <i id="loadingIcon" class="fa-solid fa-cloud-arrow-up text-5xl text-blue-500 mb-4 animate-bounce"></i>
+            <h3 class="text-xl font-bold text-slate-800 mb-2" id="loadingTitle">กำลังส่งข้อมูล...</h3>
+            <p class="text-sm text-slate-500 mb-6" id="loadingDesc">กรุณาอย่าปิดหน้าต่างหรือพักหน้าจอ</p>
+            
+            <div class="w-full bg-slate-100 rounded-full h-4 mb-2 overflow-hidden border border-slate-200">
+                <div id="uploadProgress" class="bg-blue-600 h-4 rounded-full transition-all duration-300 relative progress-stripe" style="width: 0%"></div>
+            </div>
+            <p class="text-right text-sm font-bold text-blue-700" id="uploadText">0%</p>
+        </div>
+    </div>
 
     <!-- Header -->
     <header class="bg-blue-700 text-white p-4 shadow-md flex items-center justify-between z-10 shrink-0">
@@ -29,8 +50,8 @@
         </div>
         <img id="userImage" src="https://via.placeholder.com/150" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white hidden">
     </header>
- 
-    <!-- Progress Bar -->
+
+    <!-- Progress Bar ของแบบประเมิน -->
     <div class="bg-white h-2 w-full">
         <div id="progressBar" class="bg-green-500 h-full w-0 transition-all duration-300"></div>
     </div>
@@ -61,16 +82,16 @@
             <h2 class="text-2xl font-bold text-slate-800 mb-2">ทำแบบประเมินครบแล้ว</h2>
             <p class="text-slate-600 mb-6 text-lg">กรุณากดปุ่มด้านล่างเพื่อประมวลผลอาการของท่าน</p>
             <button id="submitBtn" onclick="submitAssessment()" class="w-full bg-green-600 text-white text-xl font-bold py-4 rounded-xl shadow-md hover:bg-green-700 transition mb-3">
-                <i class="fa-solid fa-paper-plane mr-2"></i> ส่งแบบประเมิน
+                <i class="fa-solid fa-paper-plane mr-2"></i> ส่งข้อมูล (อัปโหลดรูป)
             </button>
             <button onclick="prevStep()" class="w-full bg-slate-200 text-slate-700 text-lg font-bold py-3 rounded-xl hover:bg-slate-300 transition">
                 กลับไปแก้ไข
             </button>
         </div>
 
-        <!-- Step 6: หน้าแสดงผลลัพธ์ (จะแสดงหลังกดส่ง) -->
+        <!-- Step 6: หน้าแสดงผลลัพธ์ (จะแสดงหลังอัปโหลดเสร็จ) -->
         <div id="step-result" class="step-container text-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <!-- ข้อมูลส่วนนี้จะถูกแทรกด้วย JavaScript ตามระดับความเสี่ยง -->
+            <!-- ข้อมูลจะถูกแทรกด้วย JavaScript -->
         </div>
 
     </main>
@@ -80,7 +101,7 @@
         // ⚠️ การตั้งค่า URL
         // ==========================================
         const MY_LIFF_ID = "2010995687-3szXwNXK"; 
-        const GOOGLE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBDF7UHDU6o9ZgRm2Pj-vCXsdjgX_0RLOXBpPv4AaPKSwQuuDSOO9Vk3pog2LS866x/exec'; // ใส่ URL ของ Web App เหมือนเดิม
+        const GOOGLE_APP_SCRIPT_URL = 'YOUR_GOOGLE_WEB_APP_URL_HERE'; // ใส่ URL ของ Web App ตรงนี้
 
         let currentStep = 0;
         let patientHN = "ไม่ระบุ";
@@ -95,15 +116,12 @@
         let answers = { symp1: '', symp2: '', symp3: '', symp4: '' };
         let photos = { symp1: '', symp2: '', symp3: '', symp4: '' }; 
 
-        // ==========================================
-        // 1. สร้างหน้า UI คำถามอัตโนมัติ
-        // ==========================================
         function buildQuestionsUI() {
             const container = document.getElementById('questionsContainer');
             
             questions.forEach((q, index) => {
                 const stepNum = index + 1;
-                const requiresPhoto = (stepNum !== 1); // กำหนดให้ข้อ 1 ไม่ต้องแนบรูป
+                const requiresPhoto = (stepNum !== 1); // ข้อ 1 ไม่ต้องใช้รูป
                 
                 let photoSectionHTML = '';
                 if (requiresPhoto) {
@@ -113,7 +131,7 @@
                         <p class="text-sm text-orange-600 mb-4">เพื่อส่งให้เภสัชกรประเมินความปลอดภัย</p>
                         
                         <label class="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-xl font-bold inline-block shadow-sm">
-                            <i class="fa-solid fa-plus mr-1"></i> ถ่ายรูป / เลือกรูป
+                            <i class="fa-solid fa-camera-retro mr-1"></i> ถ่ายรูป / เลือกรูป
                             <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload(event, ${stepNum})">
                         </label>
                         
@@ -135,7 +153,6 @@
                             <span class="text-xl font-bold text-slate-700"><i class="fa-solid fa-face-smile text-green-500 mr-2"></i> ไม่มีอาการ</span>
                             <i id="check-no-${stepNum}" class="fa-solid fa-circle-check text-2xl text-green-500 hidden"></i>
                         </button>
-
                         <button onclick="selectAnswer(${stepNum}, 'yes')" id="btn-yes-${stepNum}" class="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 hover:border-red-500 hover:bg-red-50 transition">
                             <span class="text-xl font-bold text-slate-700"><i class="fa-solid fa-face-frown text-red-500 mr-2"></i> มีอาการ</span>
                             <i id="check-yes-${stepNum}" class="fa-solid fa-circle-check text-2xl text-red-500 hidden"></i>
@@ -154,15 +171,11 @@
             });
         }
 
-        // ==========================================
-        // 2. การควบคุม Step
-        // ==========================================
         function updateUI() {
             document.querySelectorAll('.step-container').forEach((el, idx) => {
                 el.classList.remove('step-active');
                 if(idx === currentStep) el.classList.add('step-active');
             });
-            // อัปเดตขีดจำกัดแถบความคืบหน้า (สุดที่หน้า Submit)
             const maxProgressSteps = questions.length + 1; 
             const progress = Math.min((currentStep / maxProgressSteps) * 100, 100);
             document.getElementById('progressBar').style.width = `${progress}%`;
@@ -172,41 +185,24 @@
             if (currentStep >= 1 && currentStep <= 4) {
                 const qId = questions[currentStep - 1].id;
                 const ans = answers[qId];
-                
-                if (!ans) {
-                    alert("กรุณาเลือกคำตอบก่อนไปข้อถัดไปครับ");
-                    return;
-                }
-                
-                // บังคับถ่ายรูปถ้าเลือก "มีอาการ" และเป็นข้อที่ต้องใช้รูป (ไม่ใช่ข้อ 1)
+                if (!ans) { alert("กรุณาเลือกคำตอบก่อนไปข้อถัดไปครับ"); return; }
                 if (ans === 'yes' && currentStep !== 1 && !photos[qId]) {
                     document.getElementById(`photo-warning-${currentStep}`).classList.remove('hidden');
                     return;
                 }
             }
-
-            if(currentStep < questions.length + 1) {
-                currentStep++;
-                updateUI();
-            }
+            if(currentStep < questions.length + 1) { currentStep++; updateUI(); }
         }
 
-        function prevStep() {
-            if(currentStep > 0) {
-                currentStep--;
-                updateUI();
-            }
-        }
+        function prevStep() { if(currentStep > 0) { currentStep--; updateUI(); } }
 
         function selectAnswer(stepNum, answer) {
             const qId = questions[stepNum - 1].id;
             answers[qId] = answer;
 
-            // รีเซ็ตสไตล์ปุ่ม
             document.getElementById(`btn-no-${stepNum}`).classList.replace('border-green-500', 'border-slate-200');
             document.getElementById(`btn-no-${stepNum}`).classList.remove('bg-green-50');
             document.getElementById(`check-no-${stepNum}`).classList.add('hidden');
-            
             document.getElementById(`btn-yes-${stepNum}`).classList.replace('border-red-500', 'border-slate-200');
             document.getElementById(`btn-yes-${stepNum}`).classList.remove('bg-red-50');
             document.getElementById(`check-yes-${stepNum}`).classList.add('hidden');
@@ -222,21 +218,19 @@
                 if(photoSection) {
                     photoSection.classList.add('hidden');
                     photoWarning.classList.add('hidden');
-                    photos[qId] = ''; // เคลียร์รูปทิ้งถ้าเปลี่ยนใจ
+                    photos[qId] = ''; 
                 }
             } else {
                 document.getElementById(`btn-yes-${stepNum}`).classList.replace('border-slate-200', 'border-red-500');
                 document.getElementById(`btn-yes-${stepNum}`).classList.add('bg-red-50');
                 document.getElementById(`check-yes-${stepNum}`).classList.remove('hidden');
                 
-                if(photoSection) {
-                    photoSection.classList.remove('hidden');
-                }
+                if(photoSection) photoSection.classList.remove('hidden');
             }
         }
 
         // ==========================================
-        // ระบบจัดการรูปภาพ (พร้อมบีบอัดอัตโนมัติก่อนส่ง)
+        // 🌟 ฟังก์ชันบีบอัดรูปก่อนส่ง (กันค้าง) 🌟
         // ==========================================
         function handlePhotoUpload(event, stepNum) {
             const file = event.target.files[0];
@@ -244,33 +238,25 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                // สร้างออบเจกต์รูปภาพจำลองขึ้นมา
                 const img = new Image();
                 img.onload = function() {
-                    // สร้าง Canvas เพื่อทำการย่อรูป
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; // กำหนดความกว้างสูงสุดแค่ 800px ก็พอสำหรับดูอาการ
+                    const MAX_WIDTH = 800; // ย่อขนาดความกว้างให้เหลือไม่เกิน 800px
                     let scaleSize = MAX_WIDTH / img.width;
-                    
-                    // ถ้ารูปเดิมเล็กกว่า 800px อยู่แล้ว ไม่ต้องขยาย
                     if(scaleSize > 1) scaleSize = 1; 
 
                     canvas.width = img.width * scaleSize;
                     canvas.height = img.height * scaleSize;
 
-                    // วาดรูปลง Canvas ด้วยขนาดใหม่
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                    // แปลงกลับเป็น Base64 พร้อมบีบอัดคุณภาพเหลือ 70% (0.7)
-                    // รูปที่ได้จะมีขนาดเล็กลงมากๆ (ประมาณ 100-200KB)
+                    // บีบอัดคุณภาพเหลือ 70% ทำให้ส่งเร็วขึ้นมาก
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
 
-                    // เก็บรูปลงระบบ
                     const qId = questions[stepNum - 1].id;
                     photos[qId] = compressedBase64; 
                     
-                    // แสดงรูปตัวอย่างให้คนไข้ดู
                     document.getElementById(`preview-img-${stepNum}`).src = compressedBase64;
                     document.getElementById(`preview-container-${stepNum}`).classList.remove('hidden');
                     document.getElementById(`photo-warning-${stepNum}`).classList.add('hidden');
@@ -280,15 +266,19 @@
             reader.readAsDataURL(file);
         }
 
+        function removePhoto(stepNum) {
+            const qId = questions[stepNum - 1].id;
+            photos[qId] = ''; 
+            document.getElementById(`preview-container-${stepNum}`).classList.add('hidden');
+            document.getElementById(`preview-img-${stepNum}`).src = '';
+            const fileInput = document.querySelector(`#photo-section-${stepNum} input[type=file]`);
+            if(fileInput) fileInput.value = "";
+        }
+
         // ==========================================
-        // 4. ส่งข้อมูลและการแสดงผลประเมิน
+        // 4. ส่งข้อมูลและการแสดงหน้า Loading
         // ==========================================
         async function submitAssessment() {
-            const btn = document.getElementById('submitBtn');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังส่งข้อมูล...';
-            btn.disabled = true;
-
-            // คำนวณความเสี่ยงเบื้องต้น (ถ้าติ๊ก "มีอาการ" >= 2 ข้อ)
             let yesCount = 0;
             if (answers.symp1 === 'yes') yesCount++;
             if (answers.symp2 === 'yes') yesCount++;
@@ -300,17 +290,37 @@
             const payload = {
                 action: 'submit_assessment',
                 hn: patientHN,
-                symp1: answers.symp1,
-                symp2: answers.symp2,
-                symp3: answers.symp3,
-                symp4: answers.symp4,
-                photo2: photos.symp2, // ข้อ 1 ไม่มีรูป
-                photo3: photos.symp3,
-                photo4: photos.symp4,
+                symp1: answers.symp1, symp2: answers.symp2, symp3: answers.symp3, symp4: answers.symp4,
+                photo2: photos.symp2, photo3: photos.symp3, photo4: photos.symp4,
                 risk: isRisk
             };
 
+            // 1. เปิดหน้าจอ Loading
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            // 2. จำลองตัวเลขเปอร์เซ็นต์ให้วิ่งระหว่างรอส่งข้อมูลไป Google
+            let progress = 0;
+            const progressText = document.getElementById('uploadText');
+            const progressBar = document.getElementById('uploadProgress');
+            
+            // วิ่งขึ้นไปถึง 90% (เหลือ 10% ไว้ตอนมันโหลดเสร็จจริงๆ)
+            const interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.floor(Math.random() * 5) + 1; 
+                    if(progress > 90) progress = 90;
+                    progressBar.style.width = `${progress}%`;
+                    progressText.innerText = `${progress}%`;
+                    
+                    if(progress > 50) {
+                        document.getElementById('loadingTitle').innerText = 'กำลังประมวลผลรูปภาพ...';
+                    }
+                }
+            }, 300);
+
             try {
+                // 3. ส่งข้อมูลจริง
                 await fetch(GOOGLE_APP_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -318,19 +328,34 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 
-                showResultScreen(isRisk);
+                // 4. ถ้าส่งเสร็จ เคลียร์ % ให้วิ่งเต็ม 100
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                progressText.innerText = '100%';
+                
+                document.getElementById('loadingTitle').innerText = 'บันทึกสำเร็จ!';
+                document.getElementById('loadingTitle').classList.replace('text-slate-800', 'text-green-600');
+                document.getElementById('loadingIcon').classList.replace('fa-cloud-arrow-up', 'fa-circle-check');
+                document.getElementById('loadingIcon').classList.replace('text-blue-500', 'text-green-500');
+                document.getElementById('loadingIcon').classList.remove('animate-bounce');
+
+                // รอ 1 วินาทีให้คนไข้เห็นคำว่าสำเร็จ แล้วค่อยสลับไปหน้าสรุป
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('flex');
+                    showResultScreen(isRisk);
+                }, 1000);
 
             } catch (error) {
-                alert('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง');
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> ส่งแบบประเมิน';
-                btn.disabled = false;
+                clearInterval(interval);
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่ออินเทอร์เน็ต กรุณาลองใหม่อีกครั้ง');
             }
         }
 
         function showResultScreen(riskLevel) {
-            // ปิดหน้าส่งข้อมูล และเปิดหน้าแสดงผลลัพธ์
             document.getElementById('step-final').classList.remove('step-active');
-            
             const resultDiv = document.getElementById('step-result');
             
             if (riskLevel === "เสี่ยงสูง") {
@@ -343,7 +368,7 @@
                         <p class="font-bold text-red-800 mb-2"><i class="fa-solid fa-hand-holding-medical"></i> คำแนะนำเบื้องต้น:</p>
                         <p class="mb-3">กรุณารอการติดต่อกลับจากเภสัชกรโดยเร็ว</p>
                         <p class="text-red-700 font-bold bg-white p-3 rounded-lg border border-red-100">
-                            🚨 โปรดสังเกตอาการอย่างใกล้ชิด หากมีอาการรุนแรงกว่าเดิม หายใจลำบาก หรือหน้ามืด ให้รีบมาโรงพยาบาลทันที หรือโทร 1669 เพื่อป้องกันอันตราย
+                            🚨 โปรดสังเกตอาการอย่างใกล้ชิด หากมีอาการรุนแรงกว่าเดิม หายใจลำบาก หรือหน้ามืด ให้รีบมาโรงพยาบาลทันที หรือโทร 1669 
                         </p>
                     </div>
                     <button onclick="liff.closeWindow()" class="w-full bg-slate-800 text-white text-xl font-bold py-4 rounded-xl shadow-md hover:bg-slate-900 transition">
@@ -360,7 +385,7 @@
                         <p class="font-bold text-green-800 mb-2"><i class="fa-solid fa-pills"></i> คำแนะนำเบื้องต้น:</p>
                         <ul class="list-disc list-inside space-y-2">
                             <li>สามารถรับประทานยาตามที่แพทย์สั่งอย่างต่อเนื่องได้</li>
-                            <li>โปรดหมั่นสังเกตอาการตนเอง หากมีอาการผิดปกติเกิดขึ้นในภายหลัง สามารถกลับมาสแกนทำแบบประเมินนี้ได้อีกครั้ง</li>
+                            <li>โปรดหมั่นสังเกตอาการตนเอง หากมีอาการผิดปกติเกิดขึ้นสามารถกลับมาสแกนทำแบบประเมินนี้ได้อีกครั้ง</li>
                         </ul>
                     </div>
                     <button onclick="liff.closeWindow()" class="w-full bg-green-600 text-white text-xl font-bold py-4 rounded-xl shadow-md hover:bg-green-700 transition">
@@ -371,12 +396,9 @@
             
             resultDiv.classList.add('step-active');
             document.getElementById('progressBar').style.width = '100%';
-            window.scrollTo(0, 0); // เลื่อนจอขึ้นบนสุด
+            window.scrollTo(0, 0); 
         }
 
-        // ==========================================
-        // 5. LINE LIFF Init
-        // ==========================================
         async function initializeLiff() {
             try {
                 await liff.init({ liffId: MY_LIFF_ID });
@@ -408,4 +430,3 @@
     </script>
 </body>
 </html>
- 
