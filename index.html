@@ -22,23 +22,23 @@
         @keyframes stripe-motion { 0% { background-position: 1rem 0; } 100% { background-position: 0 0; } }
     </style>
 </head>
-<body class="flex flex-col h-screen max-w-lg mx-auto bg-white shadow-lg">
+<body class="flex flex-col h-screen max-w-lg mx-auto bg-white shadow-lg relative">
 
-    <!-- 🌟 หน้าจอ Loading (ซ่อนไว้จนกว่าจะกดส่ง) -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-slate-950/70 z-50 hidden flex-col items-center justify-center p-6 backdrop-blur-sm">
+    <!-- 🌟 หน้าจอ Loading (ตรวจสอบบัญชี & ส่งข้อมูล) -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-950/70 z-50 flex flex-col items-center justify-center p-6 backdrop-blur-sm">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
-            <i id="loadingIcon" class="fa-solid fa-cloud-arrow-up text-5xl text-[#1e3a8a] mb-4 animate-bounce"></i>
-            <h3 class="text-xl font-bold text-slate-800 mb-2" id="loadingTitle">กำลังส่งข้อมูล...</h3>
-            <p class="text-sm text-slate-500 mb-6" id="loadingDesc">กรุณาอย่าปิดหน้าต่างหรือพักหน้าจอ</p>
+            <i id="loadingIcon" class="fa-solid fa-spinner fa-spin text-5xl text-[#1e3a8a] mb-4"></i>
+            <h3 class="text-xl font-bold text-slate-800 mb-2" id="loadingTitle">กำลังเชื่อมต่อระบบ...</h3>
+            <p class="text-sm text-slate-500 mb-6" id="loadingDesc">กรุณารอสักครู่ ระบบกำลังตรวจสอบข้อมูลของท่าน</p>
             
-            <div class="w-full bg-slate-100 rounded-full h-4 mb-2 overflow-hidden border border-slate-200">
+            <div id="progressContainer" class="w-full bg-slate-100 rounded-full h-4 mb-2 overflow-hidden border border-slate-200 hidden">
                 <div id="uploadProgress" class="bg-[#1e3a8a] h-4 rounded-full transition-all duration-300 relative progress-stripe" style="width: 0%"></div>
             </div>
-            <p class="text-right text-sm font-bold text-[#1e3a8a]" id="uploadText">0%</p>
+            <p class="text-right text-sm font-bold text-[#1e3a8a] hidden" id="uploadText">0%</p>
         </div>
     </div>
 
-    <!-- Header (อ้างอิงโทนสีจาก Dashboard เภสัชกร #1e3a8a) -->
+    <!-- Header -->
     <header class="bg-[#1e3a8a] text-white px-6 py-4 shadow-md flex items-center justify-between z-10 shrink-0">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-900/60 rounded-xl flex items-center justify-center text-blue-200">
@@ -46,14 +46,14 @@
             </div>
             <div>
                 <h1 class="text-base font-bold leading-tight">แบบประเมินอาการแพ้ยา</h1>
-                <p class="text-xs text-blue-200 font-mono" id="displayHN">HN: กำลังโหลด...</p>
+                <p class="text-xs text-blue-200 font-mono" id="displayHN">สถานะ: รอการเชื่อมต่อ...</p>
             </div>
         </div>
         <img id="userImage" src="https://via.placeholder.com/150" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white/80 hidden object-cover shadow-sm">
     </header>
 
-    <!-- Progress Bar -->
-    <div class="bg-slate-100 h-2 w-full">
+    <!-- Progress Bar (ซ่อนไว้ก่อนจนกว่าจะเริ่มทำแบบประเมิน) -->
+    <div id="topProgressBar" class="bg-slate-100 h-2 w-full hidden">
         <div id="progressBar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
     </div>
 
@@ -61,12 +61,77 @@
     <main class="flex-1 overflow-y-auto p-5 flex flex-col justify-between">
         
         <div class="w-full">
-            <!-- Step 0: หน้าเริ่มต้อนรับ -->
-            <div id="step-0" class="step-container step-active text-center bg-white p-6 rounded-2xl">
+            
+            <!-- Step: ยังไม่ได้ลงทะเบียน (แสดงเมื่อเช็คแล้วไม่พบบัญชี) -->
+            <div id="step-unregistered" class="step-container text-center bg-white p-6 rounded-2xl">
+                <div class="w-20 h-20 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 border border-slate-200">
+                    <i class="fa-solid fa-user-xmark"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">ท่านยังไม่ได้ลงทะเบียน</h2>
+                <p class="text-slate-600 mb-6 text-sm leading-relaxed">ระบบไม่พบข้อมูลของท่าน กรุณาสแกน QR Code จากเภสัชกร หรือกดปุ่มด้านล่างเพื่อลงทะเบียนด้วยตนเอง</p>
+                
+                <button onclick="showSelfRegisterForm()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white text-lg font-bold py-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 mb-3">
+                    <i class="fa-solid fa-user-plus"></i> ลงทะเบียนด้วยตนเอง
+                </button>
+                <button onclick="liff.closeWindow()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-base font-bold py-3 rounded-xl transition">
+                    ปิดหน้าต่าง
+                </button>
+            </div>
+
+            <!-- Step: ฟอร์มลงทะเบียนด้วยตนเอง -->
+            <div id="step-register" class="step-container bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex items-center gap-3 mb-5 border-b border-slate-100 pb-3">
+                    <div class="w-10 h-10 bg-blue-50 text-[#1e3a8a] rounded-xl flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-notes-medical"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-800">ลงทะเบียนผู้ป่วยใหม่</h2>
+                </div>
+                <form id="selfRegisterForm" onsubmit="submitSelfRegister(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">รหัสผู้ป่วย (HN)</label>
+                        <input type="text" id="regHn" required class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">ชื่อ - นามสกุล</label>
+                        <input type="text" id="regName" required class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                        <input type="tel" id="regPhone" pattern="[0-9\-\s]{9,15}" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">วันที่เริ่มรับประทานยา</label>
+                        <input type="date" id="regDate" required class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">ยาที่เฝ้าระวัง (SCARs)</label>
+                        <select id="regDrug" required class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-white">
+                            <option value="">กรุณาเลือกยา...</option>
+                            <option value="Allopurinol">Allopurinol</option>
+                            <option value="Carbamazepine">Carbamazepine</option>
+                            <option value="Phenytoin">Phenytoin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-red-500 uppercase mb-1">ประวัติแพ้ยาเดิม (ถ้ามี)</label>
+                        <textarea id="regHistory" rows="2" placeholder="เช่น Amoxicillin มีผื่นแดง..." class="w-full p-3 border border-red-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-sm bg-red-50/50 resize-none"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white text-lg font-bold py-4 rounded-xl shadow-md transition flex items-center justify-center gap-2 mt-4">
+                        <i class="fa-solid fa-save"></i> บันทึกและเริ่มประเมิน
+                    </button>
+                    <button type="button" onclick="cancelRegister()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-3 rounded-xl transition mt-2">
+                        ยกเลิก
+                    </button>
+                </form>
+            </div>
+
+            <!-- Step 0: หน้าเริ่มต้อนรับ (เข้าสู่แบบประเมิน) -->
+            <div id="step-0" class="step-container text-center bg-white p-6 rounded-2xl">
                 <div class="w-20 h-20 bg-blue-50 text-[#1e3a8a] rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-sm border border-blue-100">
                     <i class="fa-solid fa-user-shield"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">สวัสดีครับ/ค่ะ <br><span id="userName" class="text-[#1e3a8a]">คุณ...</span></h2>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">สวัสดีครับ/ค่ะ <br><span id="displayUserName" class="text-[#1e3a8a]">คุณ...</span></h2>
                 <p class="text-slate-600 mb-8 text-base leading-relaxed">แบบประเมินอาการไม่พึงประสงค์จากยา<br>เพื่อความปลอดภัยและการดูแลสุขภาพที่ต่อเนื่องของท่าน</p>
                 <button onclick="nextStep()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white text-lg font-bold py-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
                     เริ่มทำแบบประเมิน <i class="fa-solid fa-arrow-right"></i>
@@ -76,7 +141,7 @@
             <!-- กล่องคำถาม 1-4 ถูกสร้างด้วย JavaScript -->
             <div id="questionsContainer"></div>
 
-            <!-- Step 5: หน้าอาการเพิ่มเติม (เพิ่มใหม่ตามข้อ 5 & 6) -->
+            <!-- Step 5: หน้าอาการเพิ่มเติม -->
             <div id="step-extra" class="step-container bg-white p-6 rounded-2xl">
                 <div class="text-center mb-6">
                     <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-100">
@@ -87,13 +152,11 @@
                 </div>
 
                 <div class="space-y-4 mb-6">
-                    <!-- ช่องกรอกข้อความ -->
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">รายละเอียดอาการเพิ่มเติม (ไม่บังคับ)</label>
                         <textarea id="extraSympInput" rows="3" placeholder="ระบุอาการเพิ่มเติม เช่น คันยิบๆ, อ่อนเพลียเล็กน้อย..." class="w-full p-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] outline-none text-slate-700 text-sm bg-slate-50/50 resize-none transition"></textarea>
                     </div>
 
-                    <!-- ช่องอัปโหลดรูปภาพเพิ่มเติม -->
                     <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
                         <p class="text-slate-700 font-bold text-sm mb-1"><i class="fa-solid fa-camera text-[#1e3a8a] mr-1.5"></i> แนบรูปภาพอาการเพิ่มเติม (ถ้ามี)</p>
                         <p class="text-xs text-slate-400 mb-3">ไม่บังคับ (เลือกรูปภาพจากมือถือของท่าน)</p>
@@ -110,12 +173,10 @@
                     </div>
                 </div>
 
-                <!-- ปุ่มข้าม (ไม่มีอาการเพิ่มเติม) -->
                 <button onclick="skipExtraSymp()" class="w-full mb-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-sm transition">
                     <i class="fa-solid fa-ban mr-1.5 text-slate-400"></i> ไม่มีอาการเพิ่มเติม (ข้ามขั้นตอนนี้)
                 </button>
 
-                <!-- ปุ่มควบคุมด้านล่าง -->
                 <div class="flex gap-3">
                     <button onclick="prevStep()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl text-sm transition"><i class="fa-solid fa-arrow-left mr-1"></i> ย้อนกลับ</button>
                     <button onclick="submitExtraAndProceed()" class="flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition">ถัดไป <i class="fa-solid fa-arrow-right ml-1"></i></button>
@@ -151,13 +212,15 @@
 
     <script>
         // ==========================================
-        // ⚠️ การตั้งค่า URL และตัวแปรระบบ (ห้ามเปลี่ยนโครงสร้างเดิม)
+        // ⚠️ การตั้งค่า URL และตัวแปรระบบ
         // ==========================================
         const MY_LIFF_ID = "2010995687-3szXwNXK"; 
         const GOOGLE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBDF7UHDU6o9ZgRm2Pj-vCXsdjgX_0RLOXBpPv4AaPKSwQuuDSOO9Vk3pog2LS866x/exec';
 
-        let currentStep = 0;
-        let patientHN = "ไม่ระบุ";
+        let currentStep = -1; // -1 = หน้าเริ่มต้นการตรวจสอบระบบ
+        let patientHN = "";
+        let lineUid = "";
+        let patientName = "";
         
         const questions = [
             { id: "symp1", text: "1. ท่านมีไข้สูง ปวดเมื่อยตามตัว อ่อนเพลีย อาการคล้ายไข้หวัด หรือไม่?" },
@@ -169,12 +232,145 @@
         let answers = { symp1: '', symp2: '', symp3: '', symp4: '' };
         let photos = { symp1: '', symp2: '', symp3: '', symp4: '', extra: '' }; 
 
+        // ==========================================
+        // 🔄 ระบบตรวจสอบและผูกบัญชี LINE
+        // ==========================================
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    lineUid = profile.userId;
+                    document.getElementById('userImage').src = profile.pictureUrl;
+                    document.getElementById('userImage').classList.remove('hidden');
+                    
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const hnFromUrl = urlParams.get('hn');
+                    const actionFromUrl = urlParams.get('action'); // เช่น ?action=register
+                    
+                    checkAccountBinding(lineUid, hnFromUrl, actionFromUrl);
+                } else {
+                    liff.login();
+                }
+            } catch (err) {
+                console.error('LIFF Error:', err);
+                showLoadingError('เกิดข้อผิดพลาดในการโหลด LIFF กรุณาเปิดผ่านแอปพลิเคชัน LINE');
+            }
+        }
+
+        async function checkAccountBinding(uid, hn, actionStr) {
+            try {
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'check_line_account', lineUid: uid, hn: hn }),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await response.json();
+
+                hideLoadingOverlay();
+
+                if (result.status === "success" && result.isBound) {
+                    // ผูกบัญชีเรียบร้อย หรือเคยผูกไว้แล้ว -> พาเข้าแบบประเมิน
+                    patientHN = result.patient.hn;
+                    patientName = result.patient.name;
+                    startAssessmentReady();
+                } else {
+                    // ยังไม่เคยผูกบัญชี
+                    if (actionStr === 'register') {
+                        showSelfRegisterForm(); // ผู้ป่วยกดเมนูลงทะเบียนเอง
+                    } else if (hn) {
+                        // สแกน QR มา แต่เกิด Error ฝั่ง Server เช่น โดนผูกกับคนอื่นแล้ว
+                        alert(result.message || "ไม่สามารถผูกบัญชีได้ กรุณาติดต่อเภสัชกร");
+                        showUnregisteredPage();
+                    } else {
+                        // กดเมนูประเมิน แต่ยังไม่เคยลงทะเบียนเลย
+                        showUnregisteredPage();
+                    }
+                }
+            } catch (error) {
+                hideLoadingOverlay();
+                showLoadingError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+            }
+        }
+
+        function startAssessmentReady() {
+            document.getElementById('displayHN').innerText = "HN: " + patientHN;
+            document.getElementById('displayUserName').innerText = "คุณ " + patientName;
+            document.getElementById('topProgressBar').classList.remove('hidden');
+            currentStep = 0;
+            updateUI();
+        }
+
+        function showUnregisteredPage() {
+            document.getElementById('displayHN').innerText = "สถานะ: ยังไม่ลงทะเบียน";
+            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('step-active'));
+            document.getElementById('step-unregistered').classList.add('step-active');
+        }
+
+        function showSelfRegisterForm() {
+            document.getElementById('displayHN').innerText = "สถานะ: กำลังลงทะเบียน";
+            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('step-active'));
+            document.getElementById('step-register').classList.add('step-active');
+        }
+
+        function cancelRegister() {
+            liff.closeWindow();
+        }
+
+        // ==========================================
+        // 📝 ส่งข้อมูลลงทะเบียนด้วยตนเอง
+        // ==========================================
+        async function submitSelfRegister(event) {
+            event.preventDefault();
+            const btn = event.target.querySelector('button[type="submit"]');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังบันทึก...';
+            btn.disabled = true;
+
+            const payload = {
+                action: 'self_register',
+                lineUid: lineUid,
+                hn: document.getElementById('regHn').value,
+                name: document.getElementById('regName').value,
+                phone: document.getElementById('regPhone').value,
+                date: document.getElementById('regDate').value,
+                drug: document.getElementById('regDrug').value,
+                history: document.getElementById('regHistory').value,
+                trackingChannel: 'ผู้ป่วยประเมินตนเองผ่านระบบ' // ค่า Default
+            };
+
+            try {
+                const res = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                const result = await res.json();
+                
+                if(result.status === 'success') {
+                    // ลงทะเบียนเสร็จ เริ่มประเมินได้เลย!
+                    patientHN = result.hn;
+                    patientName = payload.name;
+                    startAssessmentReady();
+                } else {
+                    alert(result.message || "เกิดข้อผิดพลาดในการลงทะเบียน");
+                    btn.innerHTML = '<i class="fa-solid fa-save"></i> บันทึกและเริ่มประเมิน';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+                btn.innerHTML = '<i class="fa-solid fa-save"></i> บันทึกและเริ่มประเมิน';
+                btn.disabled = false;
+            }
+        }
+
+        // ==========================================
+        // 🧩 ส่วนสร้าง UI ของแบบประเมิน (เหมือนเดิม)
+        // ==========================================
         function buildQuestionsUI() {
             const container = document.getElementById('questionsContainer');
-            
             questions.forEach((q, index) => {
                 const stepNum = index + 1;
-                const requiresPhoto = (stepNum !== 1); // ข้อ 1 ไม่มีรูปตามเงื่อนไขเดิม
+                const requiresPhoto = (stepNum !== 1);
                 
                 let photoSectionHTML = '';
                 if (requiresPhoto) {
@@ -195,7 +391,6 @@
                     </div>`;
                 }
 
-                // รูปแบบ Layout คำถามใหม่ (คำถามด้านบน -> Image Placeholder ตรงกลาง -> ปุ่ม 50:50 ด้านล่าง)
                 const html = `
                 <div id="step-${stepNum}" class="step-container bg-white p-6 rounded-2xl">
                     <div class="flex justify-between items-center mb-3">
@@ -204,7 +399,6 @@
                     
                     <h3 class="text-lg font-bold text-slate-800 mb-4 leading-snug">${q.text}</h3>
                     
-                    <!-- Image Placeholder สำหรับใส่รูปภาพประกอบคำถามในอนาคต -->
                     <div class="w-full h-36 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 mb-5">
                         <i class="fa-regular fa-image text-3xl mb-1 text-slate-300"></i>
                         <span class="text-xs font-medium text-slate-400">รูปภาพประกอบคำถาม</span>
@@ -213,7 +407,6 @@
 
                     ${photoSectionHTML}
 
-                    <!-- ปุ่มคำตอบซ้าย-ขวา ขนาดใหญ่พิเศษ 50:50 -->
                     <div class="grid grid-cols-2 gap-3 mb-6">
                         <button onclick="selectAnswer(${stepNum}, 'no')" id="btn-no-${stepNum}" class="py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center justify-center gap-1 shadow-sm">
                             <i class="fa-solid fa-circle-check text-slate-300 text-lg mb-0.5" id="check-icon-no-${stepNum}"></i>
@@ -235,12 +428,21 @@
             });
         }
 
+        // ==========================================
+        // ฟังก์ชันช่วยเหลือต่างๆ (Next/Prev/Upload)
+        // ==========================================
         function updateUI() {
-            // ลำดับหน้าจอ: Step 0 (ต้อนรับ) -> Step 1-4 (คำถาม) -> Step 5 (อาการเพิ่มเติม) -> Step 6 (ยืนยัน) -> Step 7 (ผลลัพธ์)
+            if(currentStep < 0) return;
             const totalSteps = 6;
             document.querySelectorAll('.step-container').forEach((el, idx) => {
                 el.classList.remove('step-active');
-                if(idx === currentStep) el.classList.add('step-active');
+                // idx: 0(step0), 1-4(Q1-4), 5(extra), 6(final), 7(result), unregistered/register are ignored in iteration 
+                if (el.id === `step-${currentStep}` || 
+                   (currentStep === 5 && el.id === 'step-extra') || 
+                   (currentStep === 6 && el.id === 'step-final') ||
+                   (currentStep === 7 && el.id === 'step-result')) {
+                    el.classList.add('step-active');
+                }
             });
             const progress = Math.min((currentStep / totalSteps) * 100, 100);
             document.getElementById('progressBar').style.width = `${progress}%`;
@@ -260,23 +462,17 @@
         }
 
         function prevStep() { 
-            if(currentStep > 0) { 
-                currentStep--; 
-                updateUI(); 
-                window.scrollTo(0, 0); 
-            } 
+            if(currentStep > 0) { currentStep--; updateUI(); window.scrollTo(0, 0); } 
         }
 
         function selectAnswer(stepNum, answer) {
             const qId = questions[stepNum - 1].id;
             answers[qId] = answer;
-
             const btnNo = document.getElementById(`btn-no-${stepNum}`);
             const btnYes = document.getElementById(`btn-yes-${stepNum}`);
             const iconNo = document.getElementById(`check-icon-no-${stepNum}`);
             const iconYes = document.getElementById(`check-icon-yes-${stepNum}`);
 
-            // Reset styles
             btnNo.className = "py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 transition flex flex-col items-center justify-center gap-1 shadow-sm";
             btnYes.className = "py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-red-500 transition flex flex-col items-center justify-center gap-1 shadow-sm";
             iconNo.className = "fa-solid fa-circle-check text-slate-300 text-lg mb-0.5";
@@ -288,44 +484,30 @@
             if (answer === 'no') {
                 btnNo.className = "py-4 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 flex flex-col items-center justify-center gap-1 shadow-sm transition";
                 iconNo.className = "fa-solid fa-circle-check text-emerald-600 text-lg mb-0.5";
-                
-                if(photoSection) {
-                    photoSection.classList.add('hidden');
-                    photoWarning.classList.add('hidden');
-                    photos[qId] = ''; 
-                }
+                if(photoSection) { photoSection.classList.add('hidden'); photoWarning.classList.add('hidden'); photos[qId] = ''; }
             } else {
                 btnYes.className = "py-4 px-3 rounded-xl border-2 border-red-500 bg-red-50/60 flex flex-col items-center justify-center gap-1 shadow-sm transition";
                 iconYes.className = "fa-solid fa-circle-check text-red-600 text-lg mb-0.5";
-                
                 if(photoSection) photoSection.classList.remove('hidden');
             }
         }
 
-        // ระบบอัปโหลดรูปภาพคำถาม 2-4 (คงเดิม)
         function handlePhotoUpload(event, stepNum) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800;
-                    let scaleSize = MAX_WIDTH / img.width;
+                    let scaleSize = 800 / img.width;
                     if(scaleSize > 1) scaleSize = 1; 
-
                     canvas.width = img.width * scaleSize;
                     canvas.height = img.height * scaleSize;
-
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                    const qId = questions[stepNum - 1].id;
-                    photos[qId] = compressedBase64; 
-                    
+                    photos[questions[stepNum - 1].id] = compressedBase64; 
                     document.getElementById(`preview-img-${stepNum}`).src = compressedBase64;
                     document.getElementById(`preview-container-${stepNum}`).classList.remove('hidden');
                     document.getElementById(`photo-warning-${stepNum}`).classList.add('hidden');
@@ -336,38 +518,27 @@
         }
 
         function removePhoto(stepNum) {
-            const qId = questions[stepNum - 1].id;
-            photos[qId] = ''; 
+            photos[questions[stepNum - 1].id] = ''; 
             document.getElementById(`preview-container-${stepNum}`).classList.add('hidden');
             document.getElementById(`preview-img-${stepNum}`).src = '';
-            const fileInput = document.querySelector(`#photo-section-${stepNum} input[type=file]`);
-            if(fileInput) fileInput.value = "";
         }
 
-        // ระบบอัปโหลดรูปภาพเพิ่มเติม (Step อาการเพิ่มเติม)
         function handleExtraPhotoUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800;
-                    let scaleSize = MAX_WIDTH / img.width;
+                    let scaleSize = 800 / img.width;
                     if(scaleSize > 1) scaleSize = 1; 
-
                     canvas.width = img.width * scaleSize;
                     canvas.height = img.height * scaleSize;
-
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                    photos.extra = compressedBase64; 
-                    
-                    document.getElementById('preview-extra-img').src = compressedBase64;
+                    photos.extra = canvas.toDataURL('image/jpeg', 0.7); 
+                    document.getElementById('preview-extra-img').src = photos.extra;
                     document.getElementById('preview-extra-container').classList.remove('hidden');
                 }
                 img.src = e.target.result;
@@ -381,24 +552,31 @@
             document.getElementById('preview-extra-img').src = '';
         }
 
-        // กดปุ่มข้ามอาการเพิ่มเติม
         function skipExtraSymp() {
             document.getElementById('extraSympInput').value = '';
             photos.extra = '';
-            currentStep = 6; // ไปหน้า Step Final (ยืนยัน)
-            updateUI();
-            window.scrollTo(0, 0);
+            currentStep = 6; updateUI(); window.scrollTo(0, 0);
         }
 
-        // กดปุ่มถัดไปหลังจากกรอกอาการเพิ่มเติม
         function submitExtraAndProceed() {
-            currentStep = 6; // ไปหน้า Step Final (ยืนยัน)
-            updateUI();
-            window.scrollTo(0, 0);
+            currentStep = 6; updateUI(); window.scrollTo(0, 0);
+        }
+
+        function showLoadingError(msg) {
+            document.getElementById('loadingIcon').className = "fa-solid fa-circle-xmark text-5xl text-red-500 mb-4";
+            document.getElementById('loadingTitle').innerText = "เกิดข้อผิดพลาด";
+            document.getElementById('loadingTitle').className = "text-xl font-bold text-red-600 mb-2";
+            document.getElementById('loadingDesc').innerText = msg;
+            document.getElementById('progressContainer').classList.add('hidden');
+        }
+
+        function hideLoadingOverlay() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('loadingOverlay').classList.remove('flex');
         }
 
         // ==========================================
-        // ส่งข้อมูลไปยัง Google Sheets (รักษา Payload เดิม 100%)
+        // ส่งผลประเมินอาการ
         // ==========================================
         async function submitAssessment() {
             let yesCount = 0;
@@ -406,10 +584,8 @@
             if (answers.symp2 === 'yes') yesCount++;
             if (answers.symp3 === 'yes') yesCount++;
             if (answers.symp4 === 'yes') yesCount++;
-
             const isRisk = (yesCount >= 1) ? "เสี่ยงสูง" : "ปกติ";
 
-            // รวมข้อความอาการเพิ่มเติมและรูปภาพเพิ่มเติมตาม Data Structure เดิม
             const extraTextVal = document.getElementById('extraSympInput').value.trim();
             let finalExtraText = "-";
             if (extraTextVal !== "" || photos.extra !== "") {
@@ -419,14 +595,9 @@
             const payload = {
                 action: 'submit_assessment',
                 hn: patientHN,
-                symp1: answers.symp1, 
-                symp2: answers.symp2, 
-                symp3: answers.symp3, 
-                symp4: answers.symp4,
-                photo2: photos.symp2, 
-                photo3: photos.symp3, 
-                photo4: photos.symp4,
-                photo5: photos.extra || "", // ส่งรูปเพิ่มเติมในช่อง photo5 เดิม
+                symp1: answers.symp1, symp2: answers.symp2, symp3: answers.symp3, symp4: answers.symp4,
+                photo2: photos.symp2, photo3: photos.symp3, photo4: photos.symp4,
+                photo5: photos.extra || "", 
                 extraSymp: finalExtraText,
                 risk: isRisk
             };
@@ -434,6 +605,14 @@
             const overlay = document.getElementById('loadingOverlay');
             overlay.classList.remove('hidden');
             overlay.classList.add('flex');
+            
+            // รีเซ็ต UI ของหน้า Loading ให้เป็นโหมดอัปโหลด
+            document.getElementById('loadingIcon').className = "fa-solid fa-cloud-arrow-up text-5xl text-[#1e3a8a] mb-4 animate-bounce";
+            document.getElementById('loadingTitle').innerText = "กำลังส่งข้อมูล...";
+            document.getElementById('loadingTitle').className = "text-xl font-bold text-slate-800 mb-2";
+            document.getElementById('loadingDesc').innerText = "กรุณาอย่าปิดหน้าต่างหรือพักหน้าจอ";
+            document.getElementById('progressContainer').classList.remove('hidden');
+            document.getElementById('uploadText').classList.remove('hidden');
             
             let progress = 0;
             const progressText = document.getElementById('uploadText');
@@ -445,10 +624,7 @@
                     if(progress > 90) progress = 90;
                     progressBar.style.width = `${progress}%`;
                     progressText.innerText = `${progress}%`;
-                    
-                    if(progress > 50) {
-                        document.getElementById('loadingTitle').innerText = 'กำลังประมวลผลข้อมูลและรูปภาพ...';
-                    }
+                    if(progress > 50) document.getElementById('loadingTitle').innerText = 'กำลังประมวลผลข้อมูลและรูปภาพ...';
                 }
             }, 300);
 
@@ -471,21 +647,19 @@
                 document.getElementById('loadingIcon').classList.remove('animate-bounce');
 
                 setTimeout(() => {
-                    overlay.classList.add('hidden');
-                    overlay.classList.remove('flex');
+                    hideLoadingOverlay();
                     showResultScreen(isRisk);
                 }, 1000);
 
             } catch (error) {
                 clearInterval(interval);
-                overlay.classList.add('hidden');
-                overlay.classList.remove('flex');
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่ออินเทอร์เน็ต กรุณาลองใหม่อีกครั้ง');
+                showLoadingError('เกิดข้อผิดพลาดในการเชื่อมต่ออินเทอร์เน็ต กรุณาลองใหม่อีกครั้ง');
             }
         }
 
         function showResultScreen(riskLevel) {
-            document.getElementById('step-final').classList.remove('step-active');
+            currentStep = 7;
+            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('step-active'));
             const resultDiv = document.getElementById('step-result');
             
             if (riskLevel === "เสี่ยงสูง") {
@@ -529,33 +703,9 @@
             window.scrollTo(0, 0); 
         }
 
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: MY_LIFF_ID });
-                if (liff.isLoggedIn()) {
-                    const profile = await liff.getProfile();
-                    document.getElementById('userName').innerText = "คุณ " + profile.displayName;
-                    document.getElementById('userImage').src = profile.pictureUrl;
-                    document.getElementById('userImage').classList.remove('hidden');
-                    
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const hn = urlParams.get('hn');
-                    if(hn) {
-                        patientHN = hn;
-                        document.getElementById('displayHN').innerText = "HN: " + hn;
-                    }
-                } else {
-                    liff.login();
-                }
-            } catch (err) {
-                console.error('LIFF Error:', err);
-                document.getElementById('userName').innerText = "ผู้ใช้งานระบบ";
-            }
-        }
-
         window.onload = () => {
             buildQuestionsUI();
-            initializeLiff();
+            initializeLiff(); // เริ่มต้นด้วยหน้าต่าง Loading ตรวจสอบบัญชีทันที
         };
     </script>
 </body>
