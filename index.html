@@ -270,20 +270,16 @@
                 hideLoadingOverlay();
 
                 if (result.status === "success" && result.isBound) {
-                    // ผูกบัญชีเรียบร้อย หรือเคยผูกไว้แล้ว -> พาเข้าแบบประเมิน
                     patientHN = result.patient.hn;
                     patientName = result.patient.name;
                     startAssessmentReady();
                 } else {
-                    // ยังไม่เคยผูกบัญชี
                     if (actionStr === 'register') {
-                        showSelfRegisterForm(); // ผู้ป่วยกดเมนูลงทะเบียนเอง
+                        showSelfRegisterForm(); 
                     } else if (hn) {
-                        // สแกน QR มา แต่เกิด Error ฝั่ง Server เช่น โดนผูกกับคนอื่นแล้ว
                         alert(result.message || "ไม่สามารถผูกบัญชีได้ กรุณาติดต่อเภสัชกร");
                         showUnregisteredPage();
                     } else {
-                        // กดเมนูประเมิน แต่ยังไม่เคยลงทะเบียนเลย
                         showUnregisteredPage();
                     }
                 }
@@ -335,7 +331,7 @@
                 date: document.getElementById('regDate').value,
                 drug: document.getElementById('regDrug').value,
                 history: document.getElementById('regHistory').value,
-                trackingChannel: 'ผู้ป่วยประเมินตนเองผ่านระบบ' // ค่า Default
+                trackingChannel: 'ผู้ป่วยประเมินตนเองผ่านระบบ'
             };
 
             try {
@@ -347,7 +343,6 @@
                 const result = await res.json();
                 
                 if(result.status === 'success') {
-                    // ลงทะเบียนเสร็จ เริ่มประเมินได้เลย!
                     patientHN = result.hn;
                     patientName = payload.name;
                     startAssessmentReady();
@@ -364,7 +359,7 @@
         }
 
         // ==========================================
-        // 🧩 ส่วนสร้าง UI ของแบบประเมิน (เหมือนเดิม)
+        // 🧩 ส่วนสร้าง UI ของแบบประเมิน
         // ==========================================
         function buildQuestionsUI() {
             const container = document.getElementById('questionsContainer');
@@ -428,15 +423,11 @@
             });
         }
 
-        // ==========================================
-        // ฟังก์ชันช่วยเหลือต่างๆ (Next/Prev/Upload)
-        // ==========================================
         function updateUI() {
             if(currentStep < 0) return;
             const totalSteps = 6;
             document.querySelectorAll('.step-container').forEach((el, idx) => {
                 el.classList.remove('step-active');
-                // idx: 0(step0), 1-4(Q1-4), 5(extra), 6(final), 7(result), unregistered/register are ignored in iteration 
                 if (el.id === `step-${currentStep}` || 
                    (currentStep === 5 && el.id === 'step-extra') || 
                    (currentStep === 6 && el.id === 'step-final') ||
@@ -629,31 +620,38 @@
             }, 300);
 
             try {
-                await fetch(GOOGLE_APP_SCRIPT_URL, {
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
+                    // นำ mode: 'no-cors' ออกเพื่อให้สามารถอ่าน response JSON จากเซิร์ฟเวอร์ได้
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 
-                clearInterval(interval);
-                progressBar.style.width = '100%';
-                progressText.innerText = '100%';
+                const result = await response.json();
                 
-                document.getElementById('loadingTitle').innerText = 'บันทึกสำเร็จ!';
-                document.getElementById('loadingTitle').classList.replace('text-slate-800', 'text-emerald-600');
-                document.getElementById('loadingIcon').classList.replace('fa-cloud-arrow-up', 'fa-circle-check');
-                document.getElementById('loadingIcon').classList.replace('text-[#1e3a8a]', 'text-emerald-500');
-                document.getElementById('loadingIcon').classList.remove('animate-bounce');
+                if (result.status === "success") {
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    progressText.innerText = '100%';
+                    
+                    document.getElementById('loadingTitle').innerText = 'บันทึกสำเร็จ!';
+                    document.getElementById('loadingTitle').classList.replace('text-slate-800', 'text-emerald-600');
+                    document.getElementById('loadingIcon').classList.replace('fa-cloud-arrow-up', 'fa-circle-check');
+                    document.getElementById('loadingIcon').classList.replace('text-[#1e3a8a]', 'text-emerald-500');
+                    document.getElementById('loadingIcon').classList.remove('animate-bounce');
 
-                setTimeout(() => {
-                    hideLoadingOverlay();
-                    showResultScreen(isRisk);
-                }, 1000);
+                    setTimeout(() => {
+                        hideLoadingOverlay();
+                        showResultScreen(isRisk);
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || 'ระบบไม่สามารถบันทึกข้อมูลได้');
+                }
 
             } catch (error) {
                 clearInterval(interval);
-                showLoadingError('เกิดข้อผิดพลาดในการเชื่อมต่ออินเทอร์เน็ต กรุณาลองใหม่อีกครั้ง');
+                showLoadingError('เกิดข้อผิดพลาด: ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+                console.error(error);
             }
         }
 
