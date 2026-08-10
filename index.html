@@ -9,12 +9,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; }
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .step-container { display: none; }
         .step-active { display: block; animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         input[type="file"] { display: none; }
-        /* แอนิเมชันแถบโหลด */
         .progress-stripe {
             background-image: linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent);
             background-size: 1rem 1rem;
@@ -23,85 +22,139 @@
         @keyframes stripe-motion { 0% { background-position: 1rem 0; } 100% { background-position: 0 0; } }
     </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen max-w-lg mx-auto bg-white shadow-lg">
 
-    <!-- 🌟 หน้าจอ Loading (จะโชว์ตอนกดส่งข้อมูล) 🌟 -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex-col items-center justify-center p-6 backdrop-blur-sm">
+    <!-- 🌟 หน้าจอ Loading (ซ่อนไว้จนกว่าจะกดส่ง) -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-950/70 z-50 hidden flex-col items-center justify-center p-6 backdrop-blur-sm">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
-            <i id="loadingIcon" class="fa-solid fa-cloud-arrow-up text-5xl text-blue-500 mb-4 animate-bounce"></i>
+            <i id="loadingIcon" class="fa-solid fa-cloud-arrow-up text-5xl text-[#1e3a8a] mb-4 animate-bounce"></i>
             <h3 class="text-xl font-bold text-slate-800 mb-2" id="loadingTitle">กำลังส่งข้อมูล...</h3>
             <p class="text-sm text-slate-500 mb-6" id="loadingDesc">กรุณาอย่าปิดหน้าต่างหรือพักหน้าจอ</p>
             
             <div class="w-full bg-slate-100 rounded-full h-4 mb-2 overflow-hidden border border-slate-200">
-                <div id="uploadProgress" class="bg-blue-600 h-4 rounded-full transition-all duration-300 relative progress-stripe" style="width: 0%"></div>
+                <div id="uploadProgress" class="bg-[#1e3a8a] h-4 rounded-full transition-all duration-300 relative progress-stripe" style="width: 0%"></div>
             </div>
-            <p class="text-right text-sm font-bold text-blue-700" id="uploadText">0%</p>
+            <p class="text-right text-sm font-bold text-[#1e3a8a]" id="uploadText">0%</p>
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="bg-blue-700 text-white p-4 shadow-md flex items-center justify-between z-10 shrink-0">
+    <!-- Header (อ้างอิงโทนสีจาก Dashboard เภสัชกร #1e3a8a) -->
+    <header class="bg-[#1e3a8a] text-white px-6 py-4 shadow-md flex items-center justify-between z-10 shrink-0">
         <div class="flex items-center gap-3">
-            <i class="fa-solid fa-notes-medical text-2xl"></i>
+            <div class="w-10 h-10 bg-blue-900/60 rounded-xl flex items-center justify-center text-blue-200">
+                <i class="fa-solid fa-shield-halved text-xl"></i>
+            </div>
             <div>
-                <h1 class="text-lg font-bold leading-tight">แบบประเมินอาการแพ้ยา</h1>
-                <p class="text-xs text-blue-200" id="displayHN">HN: กำลังโหลด...</p>
+                <h1 class="text-base font-bold leading-tight">แบบประเมินอาการแพ้ยา</h1>
+                <p class="text-xs text-blue-200 font-mono" id="displayHN">HN: กำลังโหลด...</p>
             </div>
         </div>
-        <img id="userImage" src="https://via.placeholder.com/150" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white hidden">
+        <img id="userImage" src="https://via.placeholder.com/150" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white/80 hidden object-cover shadow-sm">
     </header>
 
-    <!-- Progress Bar ของแบบประเมิน -->
-    <div class="bg-white h-2 w-full">
-        <div id="progressBar" class="bg-green-500 h-full w-0 transition-all duration-300"></div>
+    <!-- Progress Bar -->
+    <div class="bg-slate-100 h-2 w-full">
+        <div id="progressBar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
     </div>
 
     <!-- Content Area -->
-    <main class="flex-1 overflow-y-auto p-4 flex flex-col justify-center">
+    <main class="flex-1 overflow-y-auto p-5 flex flex-col justify-between">
         
-        <!-- Step 0: หน้าเริ่มต้อนรับ -->
-        <div id="step-0" class="step-container step-active text-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
-                <i class="fa-solid fa-user-shield"></i>
+        <div class="w-full">
+            <!-- Step 0: หน้าเริ่มต้อนรับ -->
+            <div id="step-0" class="step-container step-active text-center bg-white p-6 rounded-2xl">
+                <div class="w-20 h-20 bg-blue-50 text-[#1e3a8a] rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-sm border border-blue-100">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">สวัสดีครับ/ค่ะ <br><span id="userName" class="text-[#1e3a8a]">คุณ...</span></h2>
+                <p class="text-slate-600 mb-8 text-base leading-relaxed">แบบประเมินอาการไม่พึงประสงค์จากยา<br>เพื่อความปลอดภัยและการดูแลสุขภาพที่ต่อเนื่องของท่าน</p>
+                <button onclick="nextStep()" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white text-lg font-bold py-4 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    เริ่มทำแบบประเมิน <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">สวัสดีครับ/ค่ะ <br><span id="userName" class="text-blue-600">คุณ...</span></h2>
-            <p class="text-slate-600 mb-6 text-lg">แบบประเมินนี้มีทั้งหมด 4 ข้อ<br>เพื่อความปลอดภัยในการใช้ยาของท่าน</p>
-            <button onclick="nextStep()" class="w-full bg-blue-600 text-white text-xl font-bold py-4 rounded-xl shadow-md hover:bg-blue-700 transition">
-                เริ่มทำแบบประเมิน <i class="fa-solid fa-arrow-right ml-2"></i>
-            </button>
-        </div>
 
-        <!-- กล่องคำถามถูกสร้างด้วย JavaScript -->
-        <div id="questionsContainer"></div>
+            <!-- กล่องคำถาม 1-4 ถูกสร้างด้วย JavaScript -->
+            <div id="questionsContainer"></div>
 
-        <!-- Step 5: หน้ากดยืนยันการส่ง -->
-        <div id="step-final" class="step-container text-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
-                <i class="fa-solid fa-clipboard-check"></i>
+            <!-- Step 5: หน้าอาการเพิ่มเติม (เพิ่มใหม่ตามข้อ 5 & 6) -->
+            <div id="step-extra" class="step-container bg-white p-6 rounded-2xl">
+                <div class="text-center mb-6">
+                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 border border-indigo-100">
+                        <i class="fa-solid fa-notes-medical"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">อาการผิดปกติอื่น ๆ</h3>
+                    <p class="text-sm text-slate-500 mt-1">ท่านมีอาการอื่น ๆ ที่ต้องการแจ้งเพิ่มเติมหรือไม่?</p>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <!-- ช่องกรอกข้อความ -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">รายละเอียดอาการเพิ่มเติม (ไม่บังคับ)</label>
+                        <textarea id="extraSympInput" rows="3" placeholder="ระบุอาการเพิ่มเติม เช่น คันยิบๆ, อ่อนเพลียเล็กน้อย..." class="w-full p-3.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] outline-none text-slate-700 text-sm bg-slate-50/50 resize-none transition"></textarea>
+                    </div>
+
+                    <!-- ช่องอัปโหลดรูปภาพเพิ่มเติม -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                        <p class="text-slate-700 font-bold text-sm mb-1"><i class="fa-solid fa-camera text-[#1e3a8a] mr-1.5"></i> แนบรูปภาพอาการเพิ่มเติม (ถ้ามี)</p>
+                        <p class="text-xs text-slate-400 mb-3">ไม่บังคับ (เลือกรูปภาพจากมือถือของท่าน)</p>
+                        
+                        <label class="cursor-pointer bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 py-2.5 px-5 rounded-xl font-semibold text-sm inline-flex items-center gap-2 shadow-sm transition">
+                            <i class="fa-solid fa-image text-blue-600"></i> เลือกรูปภาพ
+                            <input type="file" accept="image/*" onchange="handleExtraPhotoUpload(event)">
+                        </label>
+                        
+                        <div id="preview-extra-container" class="mt-3 hidden relative inline-block">
+                            <img id="preview-extra-img" src="" class="max-h-36 rounded-lg border border-slate-300 shadow-sm">
+                            <button onclick="removeExtraPhoto()" class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white w-7 h-7 rounded-full shadow-md flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ปุ่มข้าม (ไม่มีอาการเพิ่มเติม) -->
+                <button onclick="skipExtraSymp()" class="w-full mb-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-sm transition">
+                    <i class="fa-solid fa-ban mr-1.5 text-slate-400"></i> ไม่มีอาการเพิ่มเติม (ข้ามขั้นตอนนี้)
+                </button>
+
+                <!-- ปุ่มควบคุมด้านล่าง -->
+                <div class="flex gap-3">
+                    <button onclick="prevStep()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl text-sm transition"><i class="fa-solid fa-arrow-left mr-1"></i> ย้อนกลับ</button>
+                    <button onclick="submitExtraAndProceed()" class="flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition">ถัดไป <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                </div>
             </div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">ทำแบบประเมินครบแล้ว</h2>
-            <p class="text-slate-600 mb-6 text-lg">กรุณากดปุ่มด้านล่างเพื่อประมวลผลอาการของท่าน</p>
-            <button id="submitBtn" onclick="submitAssessment()" class="w-full bg-green-600 text-white text-xl font-bold py-4 rounded-xl shadow-md hover:bg-green-700 transition mb-3">
-                <i class="fa-solid fa-paper-plane mr-2"></i> ส่งข้อมูล (อัปโหลดรูป)
-            </button>
-            <button onclick="prevStep()" class="w-full bg-slate-200 text-slate-700 text-lg font-bold py-3 rounded-xl hover:bg-slate-300 transition">
-                กลับไปแก้ไข
-            </button>
+
+            <!-- Step 6: หน้ากดยืนยันการส่ง -->
+            <div id="step-final" class="step-container text-center bg-white p-6 rounded-2xl">
+                <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-emerald-100">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">ตรวจสอบความเรียบร้อย</h2>
+                <p class="text-slate-600 mb-8 text-sm leading-relaxed">ท่านได้ทำแบบประเมินครบถ้วนแล้ว<br>กรุณากดยืนยันเพื่อส่งข้อมูลให้เภสัชกรประเมินความปลอดภัย</p>
+                
+                <button id="submitBtn" onclick="submitAssessment()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-bold py-4 rounded-xl shadow-md transition mb-3 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> ยืนยันและส่งข้อมูล
+                </button>
+                <button onclick="prevStep()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-3 rounded-xl transition">
+                    กลับไปตรวจสอบคำตอบ
+                </button>
+            </div>
+
+            <!-- Step 7: หน้าแสดงผลลัพธ์ -->
+            <div id="step-result" class="step-container text-center bg-white p-6 rounded-2xl">
+                <!-- ข้อมูลผลลัพธ์จะถูกแทรกด้วย JavaScript -->
+            </div>
         </div>
 
-        <!-- Step 6: หน้าแสดงผลลัพธ์ (จะแสดงหลังอัปโหลดเสร็จ) -->
-        <div id="step-result" class="step-container text-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <!-- ข้อมูลจะถูกแทรกด้วย JavaScript -->
+        <div class="text-center text-xs text-slate-400 mt-6 shrink-0">
+            ระบบเฝ้าระวังอาการไม่พึงประสงค์จากการใช้ยา (SCARs)
         </div>
-
     </main>
 
     <script>
         // ==========================================
-        // ⚠️ การตั้งค่า URL
+        // ⚠️ การตั้งค่า URL และตัวแปรระบบ (ห้ามเปลี่ยนโครงสร้างเดิม)
         // ==========================================
         const MY_LIFF_ID = "2010995687-3szXwNXK"; 
-        const GOOGLE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBDF7UHDU6o9ZgRm2Pj-vCXsdjgX_0RLOXBpPv4AaPKSwQuuDSOO9Vk3pog2LS866x/exec'; // ใส่ URL ของ Web App ตรงนี้
+        const GOOGLE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBDF7UHDU6o9ZgRm2Pj-vCXsdjgX_0RLOXBpPv4AaPKSwQuuDSOO9Vk3pog2LS866x/exec';
 
         let currentStep = 0;
         let patientHN = "ไม่ระบุ";
@@ -114,63 +167,67 @@
         ];
 
         let answers = { symp1: '', symp2: '', symp3: '', symp4: '' };
-        let photos = { symp1: '', symp2: '', symp3: '', symp4: '' }; 
+        let photos = { symp1: '', symp2: '', symp3: '', symp4: '', extra: '' }; 
 
         function buildQuestionsUI() {
             const container = document.getElementById('questionsContainer');
             
             questions.forEach((q, index) => {
                 const stepNum = index + 1;
-                const requiresPhoto = (stepNum !== 1); // ข้อ 1 ไม่ต้องใช้รูป
+                const requiresPhoto = (stepNum !== 1); // ข้อ 1 ไม่มีรูปตามเงื่อนไขเดิม
                 
                 let photoSectionHTML = '';
                 if (requiresPhoto) {
                     photoSectionHTML = `
-                    <div id="photo-section-${stepNum}" class="hidden mb-6 p-4 bg-orange-50 rounded-xl border border-orange-200 text-center">
-                        <p class="text-orange-800 font-bold mb-2"><i class="fa-solid fa-camera text-xl mr-1"></i> กรุณาถ่ายรูปอาการของท่าน</p>
-                        <p class="text-sm text-orange-600 mb-4">เพื่อส่งให้เภสัชกรประเมินความปลอดภัย</p>
+                    <div id="photo-section-${stepNum}" class="hidden mb-5 p-4 bg-amber-50/60 rounded-xl border border-amber-200 text-center">
+                        <p class="text-amber-800 font-bold text-xs mb-3"><i class="fa-solid fa-camera text-sm mr-1"></i> กรุณาถ่ายรูปอาการหรือผิวหนังบริเวณที่มีปัญหา</p>
                         
-                        <label class="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-xl font-bold inline-block shadow-sm">
-                            <i class="fa-solid fa-camera-retro mr-1"></i> ถ่ายรูป / เลือกรูป
+                        <label class="cursor-pointer bg-amber-600 hover:bg-amber-700 text-white py-2.5 px-5 rounded-xl font-semibold text-xs inline-flex items-center gap-2 shadow-sm transition">
+                            <i class="fa-solid fa-camera-retro"></i> ถ่ายรูป / เลือกรูปภาพ
                             <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload(event, ${stepNum})">
                         </label>
                         
-                        <div id="preview-container-${stepNum}" class="mt-4 hidden relative">
-                            <img id="preview-img-${stepNum}" src="" class="w-full max-h-48 object-cover rounded-lg border-2 border-orange-300">
-                            <button onclick="removePhoto(${stepNum})" class="absolute top-2 right-2 bg-red-600 text-white w-8 h-8 rounded-full shadow-md"><i class="fa-solid fa-trash"></i></button>
+                        <div id="preview-container-${stepNum}" class="mt-3 hidden relative">
+                            <img id="preview-img-${stepNum}" src="" class="w-full max-h-40 object-cover rounded-lg border border-amber-300 shadow-sm">
+                            <button onclick="removePhoto(${stepNum})" class="absolute top-2 right-2 bg-red-600 text-white w-7 h-7 rounded-full shadow-md flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
                         </div>
-                        <p id="photo-warning-${stepNum}" class="text-red-500 font-bold text-sm mt-3 hidden">⚠️ ต้องแนบรูปภาพก่อนไปข้อต่อไป</p>
+                        <p id="photo-warning-${stepNum}" class="text-red-500 font-bold text-xs mt-2 hidden">⚠️ ต้องแนบรูปภาพก่อนไปข้อต่อไป</p>
                     </div>`;
                 }
 
-                // สังเกตตรงนี้ครับ เอาโค้ดกล่องข้อความมาใส่ในตัวแปร HTML เรียบร้อย
+                // รูปแบบ Layout คำถามใหม่ (คำถามด้านบน -> Image Placeholder ตรงกลาง -> ปุ่ม 50:50 ด้านล่าง)
                 const html = `
-                <div id="step-${stepNum}" class="step-container bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <p class="text-sm font-bold text-blue-600 mb-2">ข้อที่ ${stepNum} จาก ${questions.length}</p>
-                    <h3 class="text-xl font-bold text-slate-800 mb-6 leading-relaxed">${q.text}</h3>
+                <div id="step-${stepNum}" class="step-container bg-white p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-bold text-[#1e3a8a] bg-blue-50 px-3 py-1 rounded-full border border-blue-100">ข้อที่ ${stepNum} จาก 4</span>
+                    </div>
                     
-                    <div class="space-y-4 mb-6">
-                        <button onclick="selectAnswer(${stepNum}, 'no')" id="btn-no-${stepNum}" class="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 hover:border-green-500 hover:bg-green-50 transition">
-                            <span class="text-xl font-bold text-slate-700"><i class="fa-solid fa-face-smile text-green-500 mr-2"></i> ไม่มีอาการ</span>
-                            <i id="check-no-${stepNum}" class="fa-solid fa-circle-check text-2xl text-green-500 hidden"></i>
-                        </button>
-                        <button onclick="selectAnswer(${stepNum}, 'yes')" id="btn-yes-${stepNum}" class="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 hover:border-red-500 hover:bg-red-50 transition">
-                            <span class="text-xl font-bold text-slate-700"><i class="fa-solid fa-face-frown text-red-500 mr-2"></i> มีอาการ</span>
-                            <i id="check-yes-${stepNum}" class="fa-solid fa-circle-check text-2xl text-red-500 hidden"></i>
-                        </button>
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 leading-snug">${q.text}</h3>
+                    
+                    <!-- Image Placeholder สำหรับใส่รูปภาพประกอบคำถามในอนาคต -->
+                    <div class="w-full h-36 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 mb-5">
+                        <i class="fa-regular fa-image text-3xl mb-1 text-slate-300"></i>
+                        <span class="text-xs font-medium text-slate-400">รูปภาพประกอบคำถาม</span>
+                        <span class="text-[10px] text-slate-300">(พื้นที่สำรองสำหรับใส่รูปภายหลัง)</span>
                     </div>
 
                     ${photoSectionHTML}
 
-                    <!-- ช่องกรอกอาการเพิ่มเติม -->
-                    <div class="mt-4 mb-4">
-                        <label class="block text-sm font-bold text-slate-600 mb-2">ระบุอาการเพิ่มเติม (ถ้ามี):</label>
-                        <textarea id="extra-symp-${stepNum}" rows="2" placeholder="เช่น คันตามตัว, หน้ามืด..." class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition"></textarea>
+                    <!-- ปุ่มคำตอบซ้าย-ขวา ขนาดใหญ่พิเศษ 50:50 -->
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <button onclick="selectAnswer(${stepNum}, 'no')" id="btn-no-${stepNum}" class="py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center justify-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-circle-check text-slate-300 text-lg mb-0.5" id="check-icon-no-${stepNum}"></i>
+                            <span class="text-base font-bold text-slate-700">ไม่ใช่</span>
+                        </button>
+                        <button onclick="selectAnswer(${stepNum}, 'yes')" id="btn-yes-${stepNum}" class="py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-red-500 hover:bg-red-50/50 transition flex flex-col items-center justify-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-circle-check text-slate-300 text-lg mb-0.5" id="check-icon-yes-${stepNum}"></i>
+                            <span class="text-base font-bold text-slate-700">ใช่ / มีอาการ</span>
+                        </button>
                     </div>
 
-                    <div class="flex gap-3 mt-8">
-                        <button onclick="prevStep()" class="flex-1 bg-slate-200 text-slate-700 text-lg font-bold py-3 rounded-xl"><i class="fa-solid fa-arrow-left"></i> กลับ</button>
-                        <button onclick="nextStep()" class="flex-1 bg-blue-600 text-white text-lg font-bold py-3 rounded-xl shadow-md">ถัดไป <i class="fa-solid fa-arrow-right"></i></button>
+                    <div class="flex gap-3">
+                        <button onclick="prevStep()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl text-sm transition"><i class="fa-solid fa-arrow-left mr-1"></i> ย้อนกลับ</button>
+                        <button onclick="nextStep()" class="flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition">ถัดไป <i class="fa-solid fa-arrow-right ml-1"></i></button>
                     </div>
                 </div>
                 `;
@@ -179,12 +236,13 @@
         }
 
         function updateUI() {
+            // ลำดับหน้าจอ: Step 0 (ต้อนรับ) -> Step 1-4 (คำถาม) -> Step 5 (อาการเพิ่มเติม) -> Step 6 (ยืนยัน) -> Step 7 (ผลลัพธ์)
+            const totalSteps = 6;
             document.querySelectorAll('.step-container').forEach((el, idx) => {
                 el.classList.remove('step-active');
                 if(idx === currentStep) el.classList.add('step-active');
             });
-            const maxProgressSteps = questions.length + 1; 
-            const progress = Math.min((currentStep / maxProgressSteps) * 100, 100);
+            const progress = Math.min((currentStep / totalSteps) * 100, 100);
             document.getElementById('progressBar').style.width = `${progress}%`;
         }
 
@@ -198,29 +256,38 @@
                     return;
                 }
             }
-            if(currentStep < questions.length + 1) { currentStep++; updateUI(); }
+            if(currentStep < 6) { currentStep++; updateUI(); window.scrollTo(0, 0); }
         }
 
-        function prevStep() { if(currentStep > 0) { currentStep--; updateUI(); } }
+        function prevStep() { 
+            if(currentStep > 0) { 
+                currentStep--; 
+                updateUI(); 
+                window.scrollTo(0, 0); 
+            } 
+        }
 
         function selectAnswer(stepNum, answer) {
             const qId = questions[stepNum - 1].id;
             answers[qId] = answer;
 
-            document.getElementById(`btn-no-${stepNum}`).classList.replace('border-green-500', 'border-slate-200');
-            document.getElementById(`btn-no-${stepNum}`).classList.remove('bg-green-50');
-            document.getElementById(`check-no-${stepNum}`).classList.add('hidden');
-            document.getElementById(`btn-yes-${stepNum}`).classList.replace('border-red-500', 'border-slate-200');
-            document.getElementById(`btn-yes-${stepNum}`).classList.remove('bg-red-50');
-            document.getElementById(`check-yes-${stepNum}`).classList.add('hidden');
+            const btnNo = document.getElementById(`btn-no-${stepNum}`);
+            const btnYes = document.getElementById(`btn-yes-${stepNum}`);
+            const iconNo = document.getElementById(`check-icon-no-${stepNum}`);
+            const iconYes = document.getElementById(`check-icon-yes-${stepNum}`);
+
+            // Reset styles
+            btnNo.className = "py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 transition flex flex-col items-center justify-center gap-1 shadow-sm";
+            btnYes.className = "py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-red-500 transition flex flex-col items-center justify-center gap-1 shadow-sm";
+            iconNo.className = "fa-solid fa-circle-check text-slate-300 text-lg mb-0.5";
+            iconYes.className = "fa-solid fa-circle-check text-slate-300 text-lg mb-0.5";
 
             const photoSection = document.getElementById(`photo-section-${stepNum}`);
             const photoWarning = document.getElementById(`photo-warning-${stepNum}`);
 
             if (answer === 'no') {
-                document.getElementById(`btn-no-${stepNum}`).classList.replace('border-slate-200', 'border-green-500');
-                document.getElementById(`btn-no-${stepNum}`).classList.add('bg-green-50');
-                document.getElementById(`check-no-${stepNum}`).classList.remove('hidden');
+                btnNo.className = "py-4 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 flex flex-col items-center justify-center gap-1 shadow-sm transition";
+                iconNo.className = "fa-solid fa-circle-check text-emerald-600 text-lg mb-0.5";
                 
                 if(photoSection) {
                     photoSection.classList.add('hidden');
@@ -228,17 +295,14 @@
                     photos[qId] = ''; 
                 }
             } else {
-                document.getElementById(`btn-yes-${stepNum}`).classList.replace('border-slate-200', 'border-red-500');
-                document.getElementById(`btn-yes-${stepNum}`).classList.add('bg-red-50');
-                document.getElementById(`check-yes-${stepNum}`).classList.remove('hidden');
+                btnYes.className = "py-4 px-3 rounded-xl border-2 border-red-500 bg-red-50/60 flex flex-col items-center justify-center gap-1 shadow-sm transition";
+                iconYes.className = "fa-solid fa-circle-check text-red-600 text-lg mb-0.5";
                 
                 if(photoSection) photoSection.classList.remove('hidden');
             }
         }
 
-        // ==========================================
-        // 🌟 ฟังก์ชันบีบอัดรูปก่อนส่ง (กันค้าง) 🌟
-        // ==========================================
+        // ระบบอัปโหลดรูปภาพคำถาม 2-4 (คงเดิม)
         function handlePhotoUpload(event, stepNum) {
             const file = event.target.files[0];
             if (!file) return;
@@ -248,7 +312,7 @@
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; // ย่อขนาดความกว้างให้เหลือไม่เกิน 800px
+                    const MAX_WIDTH = 800;
                     let scaleSize = MAX_WIDTH / img.width;
                     if(scaleSize > 1) scaleSize = 1; 
 
@@ -258,9 +322,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                    // บีบอัดคุณภาพเหลือ 70% ทำให้ส่งเร็วขึ้นมาก
                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
                     const qId = questions[stepNum - 1].id;
                     photos[qId] = compressedBase64; 
                     
@@ -282,8 +344,61 @@
             if(fileInput) fileInput.value = "";
         }
 
+        // ระบบอัปโหลดรูปภาพเพิ่มเติม (Step อาการเพิ่มเติม)
+        function handleExtraPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    let scaleSize = MAX_WIDTH / img.width;
+                    if(scaleSize > 1) scaleSize = 1; 
+
+                    canvas.width = img.width * scaleSize;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    photos.extra = compressedBase64; 
+                    
+                    document.getElementById('preview-extra-img').src = compressedBase64;
+                    document.getElementById('preview-extra-container').classList.remove('hidden');
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function removeExtraPhoto() {
+            photos.extra = '';
+            document.getElementById('preview-extra-container').classList.add('hidden');
+            document.getElementById('preview-extra-img').src = '';
+        }
+
+        // กดปุ่มข้ามอาการเพิ่มเติม
+        function skipExtraSymp() {
+            document.getElementById('extraSympInput').value = '';
+            photos.extra = '';
+            currentStep = 6; // ไปหน้า Step Final (ยืนยัน)
+            updateUI();
+            window.scrollTo(0, 0);
+        }
+
+        // กดปุ่มถัดไปหลังจากกรอกอาการเพิ่มเติม
+        function submitExtraAndProceed() {
+            currentStep = 6; // ไปหน้า Step Final (ยืนยัน)
+            updateUI();
+            window.scrollTo(0, 0);
+        }
+
         // ==========================================
-        // 4. ส่งข้อมูลและการแสดงหน้า Loading
+        // ส่งข้อมูลไปยัง Google Sheets (รักษา Payload เดิม 100%)
         // ==========================================
         async function submitAssessment() {
             let yesCount = 0;
@@ -294,36 +409,36 @@
 
             const isRisk = (yesCount >= 1) ? "เสี่ยงสูง" : "ปกติ";
 
-            // รวบรวมข้อความอาการเพิ่มเติมทั้งหมดที่คนไข้พิมพ์มา (จากทั้ง 4 ข้อ) 
-            let extraText = [];
-            for(let i=1; i<=4; i++) {
-                const input = document.getElementById(`extra-symp-${i}`);
-                if(input && input.value.trim() !== '') {
-                    extraText.push(`ข้อ ${i}: ${input.value.trim()}`);
-                }
+            // รวมข้อความอาการเพิ่มเติมและรูปภาพเพิ่มเติมตาม Data Structure เดิม
+            const extraTextVal = document.getElementById('extraSympInput').value.trim();
+            let finalExtraText = "-";
+            if (extraTextVal !== "" || photos.extra !== "") {
+                finalExtraText = extraTextVal !== "" ? extraTextVal : "แนบรูปภาพเพิ่มเติมโดยไม่มีข้อความ";
             }
-            const finalExtraText = extraText.length > 0 ? extraText.join(' | ') : "-";
 
             const payload = {
                 action: 'submit_assessment',
                 hn: patientHN,
-                symp1: answers.symp1, symp2: answers.symp2, symp3: answers.symp3, symp4: answers.symp4,
-                photo2: photos.symp2, photo3: photos.symp3, photo4: photos.symp4,
+                symp1: answers.symp1, 
+                symp2: answers.symp2, 
+                symp3: answers.symp3, 
+                symp4: answers.symp4,
+                photo2: photos.symp2, 
+                photo3: photos.symp3, 
+                photo4: photos.symp4,
+                photo5: photos.extra || "", // ส่งรูปเพิ่มเติมในช่อง photo5 เดิม
                 extraSymp: finalExtraText,
                 risk: isRisk
             };
 
-            // 1. เปิดหน้าจอ Loading
             const overlay = document.getElementById('loadingOverlay');
             overlay.classList.remove('hidden');
             overlay.classList.add('flex');
             
-            // 2. จำลองตัวเลขเปอร์เซ็นต์ให้วิ่งระหว่างรอส่งข้อมูลไป Google
             let progress = 0;
             const progressText = document.getElementById('uploadText');
             const progressBar = document.getElementById('uploadProgress');
             
-            // วิ่งขึ้นไปถึง 90% (เหลือ 10% ไว้ตอนมันโหลดเสร็จจริงๆ)
             const interval = setInterval(() => {
                 if (progress < 90) {
                     progress += Math.floor(Math.random() * 5) + 1; 
@@ -332,13 +447,12 @@
                     progressText.innerText = `${progress}%`;
                     
                     if(progress > 50) {
-                        document.getElementById('loadingTitle').innerText = 'กำลังประมวลผลรูปภาพ...';
+                        document.getElementById('loadingTitle').innerText = 'กำลังประมวลผลข้อมูลและรูปภาพ...';
                     }
                 }
             }, 300);
 
             try {
-                // 3. ส่งข้อมูลจริง
                 await fetch(GOOGLE_APP_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -346,18 +460,16 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 
-                // 4. ถ้าส่งเสร็จ เคลียร์ % ให้วิ่งเต็ม 100
                 clearInterval(interval);
                 progressBar.style.width = '100%';
                 progressText.innerText = '100%';
                 
                 document.getElementById('loadingTitle').innerText = 'บันทึกสำเร็จ!';
-                document.getElementById('loadingTitle').classList.replace('text-slate-800', 'text-green-600');
+                document.getElementById('loadingTitle').classList.replace('text-slate-800', 'text-emerald-600');
                 document.getElementById('loadingIcon').classList.replace('fa-cloud-arrow-up', 'fa-circle-check');
-                document.getElementById('loadingIcon').classList.replace('text-blue-500', 'text-green-500');
+                document.getElementById('loadingIcon').classList.replace('text-[#1e3a8a]', 'text-emerald-500');
                 document.getElementById('loadingIcon').classList.remove('animate-bounce');
 
-                // รอ 1 วินาทีให้คนไข้เห็นคำว่าสำเร็จ แล้วค่อยสลับไปหน้าสรุป
                 setTimeout(() => {
                     overlay.classList.add('hidden');
                     overlay.classList.remove('flex');
@@ -378,35 +490,35 @@
             
             if (riskLevel === "เสี่ยงสูง") {
                 resultDiv.innerHTML = `
-                    <div class="w-24 h-24 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm border-4 border-red-200">
+                    <div class="w-20 h-20 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5 shadow-sm border border-red-100">
                         <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-red-600 mb-4">โปรดระวังอาการแพ้ยา</h2>
-                    <div class="text-slate-700 mb-6 text-lg text-left bg-red-50 p-5 rounded-xl border border-red-200 shadow-inner">
+                    <h2 class="text-2xl font-bold text-red-600 mb-3">พบอาการที่ต้องเฝ้าระวัง</h2>
+                    <div class="text-slate-700 mb-6 text-sm text-left bg-red-50/60 p-5 rounded-2xl border border-red-200 shadow-sm leading-relaxed">
                         <p class="font-bold text-red-800 mb-2"><i class="fa-solid fa-hand-holding-medical"></i> คำแนะนำเบื้องต้น:</p>
-                        <p class="mb-3">กรุณารอการติดต่อกลับจากเภสัชกรโดยเร็ว</p>
-                        <p class="text-red-700 font-bold bg-white p-3 rounded-lg border border-red-100">
-                            🚨 โปรดสังเกตอาการอย่างใกล้ชิด หากมีอาการรุนแรงกว่าเดิม หายใจลำบาก หรือหน้ามืด ให้รีบมาโรงพยาบาลทันที หรือโทร 1669 
+                        <p class="mb-3">ระบบได้ส่งข้อมูลอาการของท่านให้เภสัชกรเรียบร้อยแล้ว กรุณารอการติดต่อกลับโดยเร็ว</p>
+                        <p class="text-red-700 font-bold bg-white p-3.5 rounded-xl border border-red-100 text-xs">
+                            🚨 โปรดสังเกตอาการอย่างใกล้ชิด หากมีอาการรุนแรง หายใจลำบาก แน่นหน้าอก หรือหน้ามืด ให้รีบไปโรงพยาบาลทันที หรือโทร 1669
                         </p>
                     </div>
-                    <button onclick="liff.closeWindow()" class="w-full bg-slate-800 text-white text-xl font-bold py-4 rounded-xl shadow-md hover:bg-slate-900 transition">
+                    <button onclick="liff.closeWindow()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-base font-bold py-4 rounded-xl shadow-md transition">
                         ปิดหน้าต่าง
                     </button>
                 `;
             } else {
                 resultDiv.innerHTML = `
-                    <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-sm border-4 border-green-200">
+                    <div class="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5 shadow-sm border border-emerald-100">
                         <i class="fa-solid fa-shield-check"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-green-600 mb-4">ยังไม่พบอาการผิดปกติรุนแรง</h2>
-                    <div class="text-slate-700 mb-6 text-lg text-left bg-green-50 p-5 rounded-xl border border-green-200 shadow-inner">
-                        <p class="font-bold text-green-800 mb-2"><i class="fa-solid fa-pills"></i> คำแนะนำเบื้องต้น:</p>
-                        <ul class="list-disc list-inside space-y-2">
-                            <li>สามารถรับประทานยาตามที่แพทย์สั่งอย่างต่อเนื่องได้</li>
-                            <li>โปรดหมั่นสังเกตอาการตนเอง หากมีอาการผิดปกติเกิดขึ้นสามารถกลับมาสแกนทำแบบประเมินนี้ได้อีกครั้ง</li>
+                    <h2 class="text-2xl font-bold text-emerald-600 mb-3">ยังไม่พบอาการผิดปกติรุนแรง</h2>
+                    <div class="text-slate-700 mb-6 text-sm text-left bg-emerald-50/60 p-5 rounded-2xl border border-emerald-200 shadow-sm leading-relaxed">
+                        <p class="font-bold text-emerald-800 mb-2"><i class="fa-solid fa-pills"></i> คำแนะนำเบื้องต้น:</p>
+                        <ul class="list-disc list-inside space-y-2 text-slate-600">
+                            <li>สามารถรับประทานยาตามที่แพทย์สั่งได้อย่างต่อเนื่อง</li>
+                            <li>หมั่นสังเกตอาการตนเอง หากมีความผิดปกติสามารถกลับมาทำแบบประเมินนี้ได้อีกครั้ง</li>
                         </ul>
                     </div>
-                    <button onclick="liff.closeWindow()" class="w-full bg-green-600 text-white text-xl font-bold py-4 rounded-xl shadow-md hover:bg-green-700 transition">
+                    <button onclick="liff.closeWindow()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base font-bold py-4 rounded-xl shadow-md transition">
                         กลับสู่หน้าแชท
                     </button>
                 `;
