@@ -26,7 +26,7 @@
 
     <!-- 🌟 หน้าจอ Loading (ตรวจสอบบัญชี & ส่งข้อมูล) -->
     <div id="loadingOverlay" class="fixed inset-0 bg-slate-950/70 z-50 flex flex-col items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center relative">
             <i id="loadingIcon" class="fa-solid fa-spinner fa-spin text-5xl text-[#1e3a8a] mb-4"></i>
             <h3 class="text-xl font-bold text-slate-800 mb-2" id="loadingTitle">กำลังเชื่อมต่อระบบ...</h3>
             <p class="text-sm text-slate-500 mb-6" id="loadingDesc">กรุณารอสักครู่ ระบบกำลังตรวจสอบข้อมูลของท่าน</p>
@@ -35,6 +35,11 @@
                 <div id="uploadProgress" class="bg-[#1e3a8a] h-4 rounded-full transition-all duration-300 relative progress-stripe" style="width: 0%"></div>
             </div>
             <p class="text-right text-sm font-bold text-[#1e3a8a] hidden" id="uploadText">0%</p>
+            
+            <!-- ปุ่มกดลองตรวจสอบสถานะอีกครั้ง (จะโชว์เมื่อเกิด Error) -->
+            <button id="retryCheckBtn" onclick="recheckFriendStatus()" class="hidden w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-base font-bold py-3 rounded-xl transition mt-2 border border-slate-200">
+                <i class="fa-solid fa-rotate-right mr-2"></i> ลองใหม่อีกครั้ง
+            </button>
         </div>
     </div>
 
@@ -52,17 +57,16 @@
         <img id="userImage" src="https://via.placeholder.com/150" alt="Profile" class="w-10 h-10 rounded-full border-2 border-white/80 hidden object-cover shadow-sm">
     </header>
 
-    <!-- Progress Bar (ซ่อนไว้ก่อนจนกว่าจะเริ่มทำแบบประเมิน) -->
+    <!-- Progress Bar -->
     <div id="topProgressBar" class="bg-slate-100 h-2 w-full hidden">
         <div id="progressBar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
     </div>
 
     <!-- Content Area -->
     <main class="flex-1 overflow-y-auto p-5 flex flex-col justify-between">
-        
         <div class="w-full">
 
-            <!-- 🚨 NEW: Step บังคับ Add Friend (แสดงเมื่อยังไม่ได้เพิ่มเพื่อน) -->
+            <!-- 🚨 Step บังคับ Add Friend -->
             <div id="step-add-friend" class="step-container text-center bg-white p-6 rounded-2xl">
                 <div class="w-20 h-20 bg-emerald-50 text-[#06C755] rounded-2xl flex items-center justify-center text-4xl mx-auto mb-5 border border-emerald-100 shadow-sm">
                     <i class="fa-brands fa-line"></i>
@@ -78,7 +82,7 @@
                 </button>
             </div>
             
-            <!-- Step: ยังไม่ได้ลงทะเบียน (แสดงเมื่อเช็คแล้วไม่พบบัญชี) -->
+            <!-- Step: ยังไม่ได้ลงทะเบียน -->
             <div id="step-unregistered" class="step-container text-center bg-white p-6 rounded-2xl">
                 <div class="w-20 h-20 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 border border-slate-200">
                     <i class="fa-solid fa-user-xmark"></i>
@@ -142,7 +146,7 @@
                 </form>
             </div>
 
-            <!-- Step 0: หน้าเริ่มต้อนรับ (เข้าสู่แบบประเมิน) -->
+            <!-- Step 0: หน้าเริ่มต้อนรับ -->
             <div id="step-0" class="step-container text-center bg-white p-6 rounded-2xl">
                 <div class="w-20 h-20 bg-blue-50 text-[#1e3a8a] rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-sm border border-blue-100">
                     <i class="fa-solid fa-user-shield"></i>
@@ -264,52 +268,81 @@
                     const hnFromUrl = urlParams.get('hn');
                     const actionFromUrl = urlParams.get('action'); 
                     
-                    // 🚨 NEW: ตรวจสอบสถานะการเพิ่มเพื่อน OA ก่อนเสมอ
+                    // 🚨 เรียกตรวจสอบว่าได้เป็นเพื่อนแล้วหรือยัง
                     verifyFriendStatus(lineUid, hnFromUrl, actionFromUrl);
                 } else {
                     liff.login();
                 }
             } catch (err) {
                 console.error('LIFF Error:', err);
-                showLoadingError('เกิดข้อผิดพลาดในการโหลด LIFF กรุณาเปิดผ่านแอปพลิเคชัน LINE');
+                showLoadingError('เกิดข้อผิดพลาดในการโหลด LIFF กรุณาเปิดผ่านแอปพลิเคชัน LINE', false);
             }
         }
 
-        // 🚨 NEW FUNCTION: ระบบ Gatekeeper บังคับแอดเพื่อน
+        // 🚨 แก้ไขใหม่: ฟังก์ชันตรวจสอบ Friend Status แบบ 2 ชั้น ป้องกัน Bypass และ Cache
         async function verifyFriendStatus(uid, hn, actionStr) {
             document.getElementById('loadingTitle').innerText = "กำลังตรวจสอบสถานะเพื่อน...";
+            document.getElementById('loadingTitle').className = "text-xl font-bold text-slate-800 mb-2";
+            document.getElementById('loadingIcon').className = "fa-solid fa-spinner fa-spin text-5xl text-[#1e3a8a] mb-4";
+            document.getElementById('loadingDesc').innerText = "กรุณารอสักครู่ ระบบกำลังตรวจสอบข้อมูลของท่าน";
+            document.getElementById('retryCheckBtn').classList.add('hidden'); // ซ่อนปุ่ม retry ไว้ก่อน
+
             try {
                 let isFriend = false;
+                let checkSuccess = false;
                 
-                // ใช้ LIFF SDK ตรวจสอบก่อน (เร็วที่สุด)
-                if (liff.getFriendship) {
-                    const friendship = await liff.getFriendship();
-                    isFriend = friendship.friendFlag;
-                } else {
-                    // Fallback หาก SDK ไม่รองรับ ให้ยิงไปเช็คที่ Backend (GAS) 
+                // ขั้นที่ 1: ลองใช้ LIFF SDK ตรวจสอบก่อนเพื่อความรวดเร็ว
+                try {
+                    if (typeof liff.getFriendship === 'function') {
+                        const friendship = await liff.getFriendship();
+                        if (friendship.friendFlag === true) {
+                            isFriend = true;
+                            checkSuccess = true;
+                        }
+                        // *หากตอบ false จะยังไม่เชื่อ 100% เพราะอาจเกิดจาก Cache ของ LIFF
+                    }
+                } catch (sdkError) {
+                    console.warn("LIFF SDK getFriendship failed, falling back to Backend check:", sdkError);
+                    // ปล่อยผ่านไปให้เข้ากระบวนการ Backend
+                }
+
+                // ขั้นที่ 2: หาก LIFF SDK บอกว่า false หรือโยน Error ให้ตรวจสอบผ่าน Backend ตรงเพื่อความแม่นยำสูงสุด
+                if (!isFriend) {
                     const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
                         method: 'POST',
                         body: JSON.stringify({ action: 'check_friend_status', lineUid: uid }),
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                     });
+                    
+                    if (!response.ok) throw new Error("เกิดปัญหาการเชื่อมต่อเซิร์ฟเวอร์ (" + response.status + ")");
+                    
                     const res = await response.json();
-                    isFriend = res.isFriend;
+                    if (res.status === "success") {
+                        isFriend = res.isFriend;
+                        checkSuccess = true;
+                    } else {
+                        throw new Error(res.message || "เกิดปัญหาในการดึงสถานะจากเซิร์ฟเวอร์");
+                    }
                 }
 
-                if (isFriend) {
-                    // หากเป็นเพื่อนแล้ว -> ตรวจสอบการผูกบัญชีผู้ป่วยตามปกติ
-                    document.getElementById('loadingTitle').innerText = "กำลังเชื่อมต่อระบบ...";
-                    checkAccountBinding(uid, hn, actionStr);
+                if (checkSuccess) {
+                    if (isFriend) {
+                        // สถานะ = FRIEND (อนุญาตให้เชื่อมบัญชีผู้ป่วย)
+                        document.getElementById('loadingTitle').innerText = "กำลังเชื่อมต่อระบบ...";
+                        checkAccountBinding(uid, hn, actionStr);
+                    } else {
+                        // สถานะ = NOT_FRIEND (บล็อกและโชว์หน้า Add Friend)
+                        hideLoadingOverlay();
+                        showAddFriendPage();
+                    }
                 } else {
-                    // หากยังไม่ได้เป็นเพื่อน -> บล็อกการทำแบบประเมินและแสดงหน้าให้กดแอดเพื่อน
-                    hideLoadingOverlay();
-                    showAddFriendPage();
+                    throw new Error("การตรวจสอบสถานะไม่สมบูรณ์");
                 }
+
             } catch (e) {
-                console.error("Friend Status Check Error:", e);
-                // หากขัดข้อง (เช่นเน็ตหลุด) ดักไว้ที่หน้าแอดเพื่อนก่อนเสมอเพื่อความปลอดภัย
-                hideLoadingOverlay();
-                showAddFriendPage();
+                console.error("Friend Status Check Failed:", e);
+                // แสดงสถานะ ERROR ไม่ส่งเข้า Assessment และไม่เดาว่าเป็น NOT_FRIEND
+                showLoadingError('ไม่สามารถตรวจสอบสถานะ LINE ได้ กรุณาลองใหม่อีกครั้ง', true);
             }
         }
 
@@ -360,7 +393,7 @@
                 }
             } catch (error) {
                 hideLoadingOverlay();
-                showLoadingError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง');
+                showLoadingError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง', true);
             }
         }
 
@@ -628,12 +661,22 @@
             currentStep = 6; updateUI(); window.scrollTo(0, 0);
         }
 
-        function showLoadingError(msg) {
+        // 🚨 แก้ไขฟังก์ชันการแสดงหน้า Loading ให้รองรับปุ่มเกิดข้อผิดพลาด
+        function showLoadingError(msg, isRetryable = false) {
             document.getElementById('loadingIcon').className = "fa-solid fa-circle-xmark text-5xl text-red-500 mb-4";
+            document.getElementById('loadingIcon').classList.remove('animate-spin');
             document.getElementById('loadingTitle').innerText = "เกิดข้อผิดพลาด";
             document.getElementById('loadingTitle').className = "text-xl font-bold text-red-600 mb-2";
             document.getElementById('loadingDesc').innerText = msg;
             document.getElementById('progressContainer').classList.add('hidden');
+            document.getElementById('uploadText').classList.add('hidden');
+            
+            // แสดงหรือซ่อนปุ่ม ลองใหม่อีกครั้ง
+            if (isRetryable) {
+                document.getElementById('retryCheckBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('retryCheckBtn').classList.add('hidden');
+            }
         }
 
         function hideLoadingOverlay() {
@@ -678,6 +721,7 @@
             document.getElementById('loadingDesc').innerText = "กรุณาอย่าปิดหน้าต่างหรือพักหน้าจอ";
             document.getElementById('progressContainer').classList.remove('hidden');
             document.getElementById('uploadText').classList.remove('hidden');
+            document.getElementById('retryCheckBtn').classList.add('hidden');
             
             let progress = 0;
             const progressText = document.getElementById('uploadText');
@@ -723,7 +767,7 @@
 
             } catch (error) {
                 clearInterval(interval);
-                showLoadingError('เกิดข้อผิดพลาด: ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+                showLoadingError('เกิดข้อผิดพลาด: ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้', false);
                 console.error(error);
             }
         }
