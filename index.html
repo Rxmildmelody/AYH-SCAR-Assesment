@@ -41,7 +41,6 @@
         </div>
     </div>
 
-    <!-- Header -->
     <header class="bg-[#1e3a8a] text-white px-6 py-4 shadow-md flex items-center justify-between z-10 shrink-0">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-900/60 rounded-xl flex items-center justify-center text-blue-200">
@@ -128,29 +127,39 @@
                     </div>
 
                     <div class="flex gap-3">
-                        <div class="w-1/3">
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">เพศ <span class="text-red-500">*</span></label>
+                        <div class="w-1/4">
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">เพศ</label>
                             <select id="regGender" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-white">
                                 <option value="">เลือก</option>
                                 <option value="ชาย">ชาย</option>
                                 <option value="หญิง">หญิง</option>
                             </select>
-                            <p id="regGenderError" class="text-red-500 text-xs hidden mt-1">จำเป็น</p>
                         </div>
-                        <div class="w-2/3">
+                        <div class="w-3/4">
                             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">วันเดือนปีเกิด <span class="text-red-500">*</span></label>
-                            <input type="date" id="regDob" onchange="calculateRegAge()" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-slate-50/50">
+                            <div class="flex gap-1">
+                                <select id="regDobDay" onchange="calculateRegAge()" class="w-1/3 p-3 border border-slate-200 rounded-xl outline-none text-sm bg-white">
+                                    <option value="">วัน</option>
+                                </select>
+                                <select id="regDobMonth" onchange="calculateRegAge()" class="w-1/3 p-3 border border-slate-200 rounded-xl outline-none text-sm bg-white">
+                                    <option value="">เดือน</option>
+                                </select>
+                                <select id="regDobYear" onchange="calculateRegAge()" class="w-1/3 p-3 border border-slate-200 rounded-xl outline-none text-sm bg-white">
+                                    <option value="">ปี</option>
+                                </select>
+                            </div>
                             <p id="regDobError" class="text-red-500 text-xs hidden mt-1">กรุณากรอกวันเกิด</p>
                         </div>
                     </div>
                     
-                    <div class="hidden">
-                        <input type="text" id="regAge" readonly>
+                    <div class="mt-2">
+                        <input type="text" id="regAge" readonly placeholder="อายุคำนวณอัตโนมัติ" class="w-full p-3 border border-slate-100 rounded-xl bg-slate-50 text-slate-600 font-bold outline-none text-sm cursor-not-allowed">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
                         <input type="tel" id="regPhone" pattern="[0-9\-\s]{9,15}" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#1e3a8a] outline-none text-sm bg-slate-50/50">
+                        <p id="regPhoneError" class="text-red-500 text-xs hidden mt-1">กรุณากรอกเบอร์โทรศัพท์</p>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1">วันที่เริ่มรับประทานยา <span class="text-red-500">*</span></label>
@@ -216,13 +225,12 @@
                             <input type="file" accept="image/*" onchange="handlePhotoUpload(event, 'extra')">
                         </label>
                         
-                        <!-- คอนเทนเนอร์แสดงรูปหลายรูป -->
                         <div id="preview-container-extra" class="mt-3 hidden flex gap-2 flex-wrap justify-center"></div>
                     </div>
                 </div>
 
-                <button onclick="skipExtraSymp()" class="w-full mb-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-sm transition shadow-sm">
-                    <i class="fa-solid fa-ban mr-1.5 text-slate-400"></i> ไม่มีอาการเพิ่มเติม
+                <button onclick="skipExtraSymp()" class="w-full mb-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check-circle"></i> ไม่มีอาการเพิ่มเติม
                 </button>
 
                 <div class="flex gap-3">
@@ -269,10 +277,39 @@
         ];
 
         let answers = { symp1: '', symp2: '', symp3: '', symp4: '' };
-        // แปลง photo เป็น Array เพื่อรองรับภาพหลายภาพ
         let photos = { symp1: [], symp2: [], symp3: [], symp4: [], extra: [] }; 
 
+        // สร้างตัวเลือก Dropdown Date Picker
+        function generateDateDropdowns(dayId, monthId, yearId) {
+            const daySel = document.getElementById(dayId);
+            if(!daySel) return;
+            daySel.innerHTML = '<option value="">วัน</option>';
+            for(let i=1; i<=31; i++) {
+                let opt = document.createElement('option');
+                opt.value = i < 10 ? '0'+i : i; opt.text = i;
+                daySel.appendChild(opt);
+            }
+            const monthSel = document.getElementById(monthId);
+            monthSel.innerHTML = '<option value="">เดือน</option>';
+            const months = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+            months.forEach((m, idx) => {
+                let opt = document.createElement('option');
+                let mVal = idx + 1;
+                opt.value = mVal < 10 ? '0'+mVal : mVal; opt.text = m;
+                monthSel.appendChild(opt);
+            });
+            const yearSel = document.getElementById(yearId);
+            yearSel.innerHTML = '<option value="">ปี</option>';
+            const currentYear = new Date().getFullYear();
+            for(let i = currentYear; i >= currentYear - 120; i--) {
+                let opt = document.createElement('option');
+                opt.value = i; opt.text = i + 543;
+                yearSel.appendChild(opt);
+            }
+        }
+
         async function initializeLiff() {
+            generateDateDropdowns('regDobDay', 'regDobMonth', 'regDobYear');
             try {
                 await liff.init({ liffId: MY_LIFF_ID });
                 if (liff.isLoggedIn()) {
@@ -395,8 +432,6 @@
         function cancelRegister() { liff.closeWindow(); }
 
         // ==========================================
-        // ตรรกะฟอร์มลงทะเบียนผู้ป่วย
-        // ==========================================
         function autoSelectRegGender() {
             const p = document.getElementById('regPrefix').value;
             const g = document.getElementById('regGender');
@@ -404,11 +439,35 @@
             else if(p === 'นาง' || p === 'นางสาว' || p === 'ด.ญ.') g.value = 'หญิง';
         }
 
-        function calculateRegAge() {
-            const dobValue = document.getElementById('regDob').value;
-            if(!dobValue) { document.getElementById('regAge').value = ""; return; }
+        function getExactAgeText(dobDate) {
+            const today = new Date();
+            if (dobDate > today) return "";
+
+            let ageYear = today.getFullYear() - dobDate.getFullYear();
+            let ageMonth = today.getMonth() - dobDate.getMonth();
+            let ageDay = today.getDate() - dobDate.getDate();
             
-            const dob = new Date(dobValue);
+            if (ageDay < 0) {
+                ageMonth--;
+                const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                ageDay += prevMonth.getDate();
+            }
+            if (ageMonth < 0) {
+                ageYear--;
+                ageMonth += 12;
+            }
+
+            return `อายุ ${ageYear} ปี ${ageMonth} เดือน ${ageDay} วัน`;
+        }
+
+        function calculateRegAge() {
+            const d = document.getElementById('regDobDay').value;
+            const m = document.getElementById('regDobMonth').value;
+            const y = document.getElementById('regDobYear').value;
+            
+            if(!d || !m || !y) { document.getElementById('regAge').value = ""; return; }
+            
+            const dob = new Date(`${y}-${m}-${d}`);
             const today = new Date();
             
             if (dob > today) {
@@ -420,37 +479,39 @@
                 document.getElementById('regDobError').classList.add('hidden');
             }
 
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-                age--;
-            }
-            document.getElementById('regAge').value = age >= 0 ? age : "";
+            document.getElementById('regAge').value = getExactAgeText(dob);
         }
 
         function validateRegistration() {
             let isValid = true;
-            const requiredFields = ['regHn', 'regPrefix', 'regFirstName', 'regLastName', 'regGender', 'regDob', 'regDate', 'regDrug'];
+            // ทุกช่องบังคับ ยกเว้นเพศและประวัติแพ้ยา (regHistory)
+            const requiredFields = ['regHn', 'regPrefix', 'regFirstName', 'regLastName', 'regDobDay', 'regDobMonth', 'regDobYear', 'regPhone', 'regDate', 'regDrug'];
             
             requiredFields.forEach(id => {
                 const el = document.getElementById(id);
                 const errorEl = document.getElementById(id + 'Error');
                 if (!el.value.trim()) {
-                    errorEl.classList.remove('hidden');
+                    if (errorEl) errorEl.classList.remove('hidden');
+                    el.classList.add('border-red-500');
                     isValid = false;
                 } else {
-                    errorEl.classList.add('hidden');
+                    if (errorEl) errorEl.classList.add('hidden');
+                    el.classList.remove('border-red-500');
                 }
             });
 
-            // ตรวจสอบวันเกิดอนาคตอีกรอบ
-            const dob = new Date(document.getElementById('regDob').value);
-            const today = new Date();
-            if (document.getElementById('regDob').value && dob > today) {
-                document.getElementById('regDobError').innerText = "กรุณาตรวจสอบวันเดือนปีเกิด (ห้ามเป็นอนาคต)";
-                document.getElementById('regDobError').classList.remove('hidden');
-                isValid = false;
+            const d = document.getElementById('regDobDay').value;
+            const m = document.getElementById('regDobMonth').value;
+            const y = document.getElementById('regDobYear').value;
+            if (d && m && y) {
+                const dob = new Date(`${y}-${m}-${d}`);
+                if (dob > new Date()) {
+                    document.getElementById('regDobError').innerText = "กรุณาตรวจสอบวันเดือนปีเกิด (ห้ามเป็นอนาคต)";
+                    document.getElementById('regDobError').classList.remove('hidden');
+                    isValid = false;
+                }
             }
+            if(!isValid) alert("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
             return isValid;
         }
 
@@ -458,11 +519,16 @@
             event.preventDefault();
             
             if (!validateRegistration()) {
-                return; // ถ้ากรอกไม่ครบให้หยุดทำงาน
+                return; 
             }
 
             const btn = event.target.querySelector('button[type="submit"]');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>กำลังบันทึก...'; btn.disabled = true;
+
+            const d = document.getElementById('regDobDay').value;
+            const m = document.getElementById('regDobMonth').value;
+            const y = document.getElementById('regDobYear').value;
+            const dobVal = `${y}-${m}-${d}`;
 
             const payload = {
                 action: 'self_register', lineUid: lineUid,
@@ -470,13 +536,13 @@
                 prefix: document.getElementById('regPrefix').value,
                 firstName: document.getElementById('regFirstName').value,
                 lastName: document.getElementById('regLastName').value,
-                gender: document.getElementById('regGender').value,
-                dob: document.getElementById('regDob').value,
+                gender: document.getElementById('regGender').value || "-",
+                dob: dobVal,
                 age: document.getElementById('regAge').value,
                 phone: document.getElementById('regPhone').value,
                 date: document.getElementById('regDate').value,
                 drug: document.getElementById('regDrug').value,
-                history: document.getElementById('regHistory').value,
+                history: document.getElementById('regHistory').value || "-",
                 trackingChannel: 'ผู้ป่วยประเมินตนเองผ่านระบบ'
             };
 
@@ -499,8 +565,6 @@
             }
         }
 
-        // ==========================================
-        // 🧩 ส่วนสร้าง UI ของแบบประเมินและภาพหลายภาพ
         // ==========================================
         function buildQuestionsUI() {
             const container = document.getElementById('questionsContainer');
@@ -585,7 +649,6 @@
                 const ans = answers[qId];
                 if (!ans) { alert("กรุณาเลือกคำตอบก่อนไปข้อถัดไปครับ"); return; }
                 
-                // ตรวจสอบขั้นต่ำ 1 รูป หากตอบว่ามีอาการ
                 if (ans === 'yes' && currentStep !== 1 && photos[qId].length === 0) {
                     document.getElementById(`photo-warning-${currentStep}`).classList.remove('hidden');
                     return;
@@ -622,7 +685,7 @@
                 if(photoSection) { 
                     photoSection.classList.add('hidden'); 
                     photoWarning.classList.add('hidden'); 
-                    photos[qId] = []; // Clear array
+                    photos[qId] = [];
                     renderPhotoPreview(stepNum);
                 }
             } else {
@@ -632,9 +695,6 @@
             }
         }
 
-        // ==========================================
-        // อัปโหลดและพรีวิวภาพหลายภาพ
-        // ==========================================
         function handlePhotoUpload(event, stepId) {
             const file = event.target.files[0];
             if (!file) return;
@@ -697,7 +757,6 @@
                 container.classList.add('hidden');
             }
             
-            // ซ่อนปุ่มเพิ่มรูปถ้าครบ 5 รูปแล้ว
             if(photos[qId].length >= 5) { addBtn.style.display = 'none'; } 
             else { addBtn.style.display = 'inline-flex'; }
         }
@@ -706,7 +765,7 @@
 
         function skipExtraSymp() {
             document.getElementById('extraSympInput').value = 'ไม่มีอาการเพิ่มเติม';
-            photos.extra = []; // Clear images
+            photos.extra = []; 
             renderPhotoPreview('extra');
             currentStep = 6; updateUI(); window.scrollTo(0, 0);
         }
@@ -752,7 +811,7 @@
                 hn: patientHN,
                 symp1: answers.symp1, symp2: answers.symp2, symp3: answers.symp3, symp4: answers.symp4,
                 photo2: photos.symp2, photo3: photos.symp3, photo4: photos.symp4,
-                photo5: photos.extra, // ส่ง Array
+                photo5: photos.extra,
                 extraSymp: finalExtraText,
                 risk: isRisk
             };
