@@ -239,26 +239,23 @@
 
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">คะแนนความพึงพอใจ</span>
-                    <span id="satProgressBadge" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">1 / 5</span>
+                    <span id="satProgressBadge" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">ข้อ 1 / 5</span>
                 </div>
 
-                <div class="min-h-[120px] flex flex-col justify-center mb-6">
+                <div class="min-h-[80px] flex flex-col justify-center mb-6">
                     <h4 id="satQuestionText" class="text-lg font-bold text-slate-700 text-center leading-relaxed">...</h4>
                 </div>
 
-                <div class="flex justify-between gap-1 mb-8" id="satOptionsContainer">
-                    <!-- Emojis Render Here -->
-                </div>
+                <!-- Emojis Container -->
+                <div id="satOptionsContainer" class="grid grid-cols-3 gap-3 mb-6"></div>
 
-                <div class="flex justify-between text-[11px] text-slate-400 font-medium mb-6 px-1">
+                <div id="satLegend" class="flex justify-between text-[11px] text-slate-400 font-medium mb-6 px-1">
                     <span>0 = ไม่พึงพอใจเลย</span>
                     <span>5 = พึงพอใจมากที่สุด</span>
                 </div>
 
-                <div class="flex gap-3">
-                    <button onclick="prevSatStep()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl text-sm transition"><i class="fa-solid fa-arrow-left mr-1"></i> ย้อนกลับ</button>
-                    <button onclick="nextSatStep()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition">ถัดไป <i class="fa-solid fa-arrow-right ml-1"></i></button>
-                </div>
+                <!-- Actions Container (Back/Submit buttons) -->
+                <div id="satActionButtons" class="flex gap-3"></div>
             </div>
 
             <!-- Step 7: หน้ากดยืนยันการส่ง -->
@@ -653,44 +650,65 @@
         }
 
         // ==========================================
-        // Satisfaction Logic
+        // Satisfaction Logic (Auto Next, Emoji Tap)
         // ==========================================
         function renderSatQuestion() {
-            document.getElementById('satProgressBadge').innerText = `${currentSatStep + 1} / 5`;
+            // หน้าตรวจสอบ (เสร็จสิ้น 5 ข้อ)
+            if (currentSatStep === 5) {
+                document.getElementById('satProgressBadge').innerText = `เสร็จสิ้น`;
+                document.getElementById('satProgressBadge').className = `text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200`;
+                document.getElementById('satQuestionText').innerHTML = `
+                    <div class="text-emerald-500 mb-4 mt-2 animate-bounce"><i class="fa-solid fa-circle-check text-6xl"></i></div>
+                    <div class="text-2xl font-bold text-emerald-600">ตอบครบแล้ว</div>
+                    <p class="text-sm text-slate-500 font-normal mt-2">ขอบคุณสำหรับความคิดเห็นของท่าน</p>
+                `;
+                document.getElementById('satOptionsContainer').className = "hidden";
+                document.getElementById('satLegend').classList.add('hidden');
+                
+                document.getElementById('satActionButtons').innerHTML = `
+                    <button onclick="prevSatStep()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 rounded-xl text-sm transition shadow-sm"><i class="fa-solid fa-arrow-left mr-1"></i> ย้อนกลับไปแก้ไข</button>
+                    <button onclick="goToFinalStep()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl text-sm shadow-sm transition">ส่งแบบประเมิน <i class="fa-solid fa-paper-plane ml-1"></i></button>
+                `;
+                return;
+            }
+
+            // หน้าคำถามปกติ (ข้อ 1 - 5)
+            document.getElementById('satOptionsContainer').className = "grid grid-cols-3 gap-3 mb-6";
+            document.getElementById('satLegend').classList.remove('hidden');
+            document.getElementById('satProgressBadge').innerText = `ข้อ ${currentSatStep + 1} / 5`;
+            document.getElementById('satProgressBadge').className = `text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200`;
             document.getElementById('satQuestionText').innerText = satQuestions[currentSatStep];
             
             let html = '';
             emojis.forEach((em, idx) => {
                 const isSelected = satAnswers[currentSatStep] === idx;
-                const bgClass = isSelected ? 'bg-blue-100 border-blue-400 scale-110 shadow-md ring-2 ring-blue-200' : 'bg-slate-50 border-slate-200 opacity-60 grayscale hover:opacity-100 hover:grayscale-0';
+                const bgClass = isSelected ? 'bg-blue-50 border-blue-500 scale-105 shadow-md ring-2 ring-blue-200 z-10' : 'bg-white border-slate-200 hover:bg-slate-50 opacity-90';
                 html += `
-                <button onclick="selectSat(${idx})" class="flex flex-col items-center justify-center w-[15%] h-[60px] rounded-xl border-2 transition-all duration-200 ${bgClass}">
-                    <span class="text-2xl mb-0.5">${em}</span>
-                    <span class="text-[10px] font-bold ${isSelected ? 'text-blue-700' : 'text-slate-400'}">${idx}</span>
+                <button onclick="selectSat(${idx})" class="flex flex-col items-center justify-center py-4 rounded-2xl border-2 transition-all duration-200 transform active:scale-95 ${bgClass}">
+                    <span class="text-4xl mb-1">${em}</span>
+                    <span class="text-[13px] font-bold ${isSelected ? 'text-blue-700' : 'text-slate-500'}">${idx}</span>
                 </button>
                 `;
             });
             document.getElementById('satOptionsContainer').innerHTML = html;
+
+            let backLabel = currentSatStep === 0 ? 'ย้อนกลับไปอาการเพิ่มเติม' : 'ย้อนกลับไปข้อก่อนหน้า';
+            document.getElementById('satActionButtons').innerHTML = `
+                <button onclick="prevSatStep()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 rounded-xl text-sm transition shadow-sm"><i class="fa-solid fa-arrow-left mr-1"></i> ${backLabel}</button>
+            `;
         }
 
         function selectSat(val) {
             satAnswers[currentSatStep] = val;
-            renderSatQuestion();
-        }
-
-        function nextSatStep() {
-            if (satAnswers[currentSatStep] === null) {
-                alert("กรุณาเลือกคะแนนก่อนดำเนินการต่อ");
-                return;
-            }
-            if (currentSatStep < 4) {
-                currentSatStep++;
-                renderSatQuestion();
-            } else {
-                currentStep = 7; 
-                updateUI();
-                window.scrollTo(0,0);
-            }
+            renderSatQuestion(); // แสดงสีฟ้าที่ปุ่มเพื่อยืนยันการแตะ
+            
+            // หน่วงเวลาเล็กน้อยเพื่อให้ผู้ป่วยเห็นว่าระบบรับค่าแล้ว ค่อยเปลี่ยนข้อ
+            setTimeout(() => {
+                if (currentSatStep < 5) {
+                    currentSatStep++;
+                    renderSatQuestion();
+                }
+            }, 400); 
         }
 
         function prevSatStep() {
@@ -698,10 +716,20 @@
                 currentSatStep--;
                 renderSatQuestion();
             } else {
-                currentStep = 5;
+                currentStep = 5; // กลับไปหน้าอาการเพิ่มเติม
                 updateUI();
                 window.scrollTo(0,0);
             }
+        }
+
+        function goToFinalStep() {
+            if (satAnswers.includes(null)) {
+                alert("กรุณาตอบคำถามความพึงพอใจให้ครบ 5 ข้อ");
+                return;
+            }
+            currentStep = 7; 
+            updateUI();
+            window.scrollTo(0,0);
         }
 
         // ==========================================
@@ -741,9 +769,9 @@
         }
 
         function prevStep() { 
-            if (currentStep === 7) {
+            if (currentStep === 7) { // ถ้าอยู่หน้า Submit
                 currentStep = 6;
-                currentSatStep = 4;
+                currentSatStep = 4; // ถอยกลับไปข้อสุดท้ายของ Satisfaction
                 renderSatQuestion();
                 updateUI();
                 window.scrollTo(0, 0);
@@ -758,11 +786,30 @@
             document.getElementById('extraSympInput').value = 'ไม่มีอาการเพิ่มเติม';
             photos.extra = []; 
             renderPhotoPreview('extra');
-            currentStep = 6; currentSatStep = 0; renderSatQuestion(); updateUI(); window.scrollTo(0, 0);
+            currentStep = 6; 
+            
+            // ข้ามไปข้อที่ยังไม่ได้ทำ หรือไปหน้าเสร็จสิ้นหากทำครบแล้ว
+            if (satAnswers.includes(null)) {
+                currentSatStep = satAnswers.indexOf(null);
+            } else {
+                currentSatStep = 5;
+            }
+            renderSatQuestion(); 
+            updateUI(); 
+            window.scrollTo(0, 0);
         }
 
         function submitExtraAndProceed() {
-            currentStep = 6; currentSatStep = 0; renderSatQuestion(); updateUI(); window.scrollTo(0, 0);
+            currentStep = 6; 
+            // เช็คว่าเคยตอบครบแล้วหรือไม่เวลาย้อนกลับไปหน้า Extra Symps
+            if (satAnswers.includes(null)) {
+                currentSatStep = satAnswers.indexOf(null);
+            } else {
+                currentSatStep = 5;
+            }
+            renderSatQuestion(); 
+            updateUI(); 
+            window.scrollTo(0, 0);
         }
 
         function selectAnswer(stepNum, answer) {
