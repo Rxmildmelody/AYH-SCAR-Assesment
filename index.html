@@ -17,7 +17,7 @@
            app-wide (readable text, larger tap targets) without having
            to hand-edit every single class in the file.
            ============================================================ */
-        html { font-size: 100%; }
+        html { font-size: 95%; }
 
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .step-container { display: none; }
@@ -72,20 +72,23 @@
         .answer-btn {
             width: 100%;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 1rem;
-            padding: 1.25rem 1.25rem;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 6.25rem;
+            padding: 1.1rem 0.5rem;
             border-radius: 1.25rem;
             border-width: 3px;
             border-color: #e2e8f0;
             background-color: #ffffff;
             box-shadow: 0 1px 2px rgba(0,0,0,0.04);
             transition: all 0.15s ease;
-            text-align: left;
+            text-align: center;
         }
         .answer-btn:active { transform: scale(0.98); }
-        .answer-btn .answer-icon { font-size: 1.75rem; flex-shrink: 0; }
-        .answer-btn .answer-label { font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
+        .answer-btn .answer-icon { font-size: 1.6rem; flex-shrink: 0; }
+        .answer-btn .answer-label { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
 
         /* ============================================================
            SATISFACTION EMOJI ROW — single row, always, at any width.
@@ -144,11 +147,7 @@
 
     <header class="bg-[#1e3a8a] text-white px-6 py-4 shadow-md flex items-center justify-between z-10 shrink-0">
         <div class="flex items-center gap-3">
-            
-            <!-- SCARs SYSTEM LOGO: Replace assets/scars-logo.png with the official project logo -->
-            <img src="assets/scars-logo.png" alt="SCARs Logo" class="h-10 w-auto max-w-[60px] object-contain bg-white/10 rounded p-1">
-            
-            <div class="w-10 h-10 bg-blue-900/60 rounded-xl flex items-center justify-center text-blue-200 shrink-0">
+            <div class="w-10 h-10 bg-blue-900/60 rounded-xl flex items-center justify-center text-blue-200">
                 <i class="fa-solid fa-shield-halved text-xl"></i>
             </div>
             <div>
@@ -389,6 +388,21 @@
         const GOOGLE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZwMrptwaPyGSCCiYQzv8M0ejdtcC7b1PF5KfuU02HPtdPmfx20LUklIFqVYGnmNC/exec';
 
         let currentStep = -1;
+
+        // ============================================================
+        // Smooth scroll-to-top used after every step/question change.
+        // The page's actual scrolling container is <main> (overflow-y-auto),
+        // not necessarily the window, so both are scrolled to be safe
+        // across browsers/Android quirks. Reused by every navigation
+        // function instead of duplicating scroll logic per call site.
+        // ============================================================
+        function scrollToTop() {
+            const mainEl = document.querySelector('main');
+            if (mainEl) {
+                try { mainEl.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { mainEl.scrollTop = 0; }
+            }
+            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+        }
         let patientHN = "";
         let lineUid = "";
         let patientName = "";
@@ -720,11 +734,11 @@
                 const html = `
                 <div id="step-${stepNum}" class="step-container bg-white p-5 rounded-2xl">
 
-                    <!-- TOP: question number + large question text -->
-                    <div class="flex justify-center mb-3">
-                        <span class="text-sm font-bold text-[#1e3a8a] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">ข้อที่ ${stepNum} จาก 4</span>
+                    <!-- TOP: question number + large question text (compact, left-aligned) -->
+                    <div class="mb-2">
+                        <span class="text-xs font-bold text-[#1e3a8a] bg-blue-50 px-3 py-1 rounded-full border border-blue-100 whitespace-nowrap">ข้อที่ ${stepNum} จาก 4</span>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-5 leading-snug text-center">${q.text}</h3>
+                    <h3 class="text-xl font-bold text-slate-900 mb-4 leading-snug text-left">${q.text}</h3>
 
                     <!-- CENTER: question image (4:5, object-fit: contain) -->
                     <div class="question-image-wrap mb-5">
@@ -744,8 +758,8 @@
 
                     ${photoSectionHTML}
 
-                    <!-- BOTTOM: large, stacked answer buttons -->
-                    <div class="flex flex-col gap-3 mb-6 mt-5">
+                    <!-- BOTTOM: two large side-by-side answer buttons -->
+                    <div class="grid grid-cols-2 gap-4 mb-6 mt-5">
                         <button onclick="selectAnswer(${stepNum}, 'no')" id="btn-no-${stepNum}" class="answer-btn hover:border-emerald-400">
                             <i class="fa-solid fa-circle-check answer-icon text-slate-300" id="check-icon-no-${stepNum}"></i>
                             <span class="answer-label text-slate-700">ไม่ใช่</span>
@@ -835,7 +849,7 @@
             } else {
                 currentStep = 5; // กลับไปหน้าอาการเพิ่มเติม
                 updateUI();
-                window.scrollTo(0,0);
+                scrollToTop();
             }
         }
 
@@ -846,7 +860,7 @@
             }
             currentStep = 7; 
             updateUI();
-            window.scrollTo(0,0);
+            scrollToTop();
         }
 
         // ==========================================
@@ -882,7 +896,7 @@
                     document.getElementById(`photo-warning-${currentStep}`).classList.add('hidden');
                 }
             }
-            if(currentStep < 8) { currentStep++; updateUI(); window.scrollTo(0, 0); }
+            if(currentStep < 8) { currentStep++; updateUI(); scrollToTop(); }
         }
 
         function prevStep() { 
@@ -891,11 +905,11 @@
                 currentSatStep = 4; // ถอยกลับไปข้อสุดท้ายของ Satisfaction
                 renderSatQuestion();
                 updateUI();
-                window.scrollTo(0, 0);
+                scrollToTop();
             } else if (currentStep > 0) { 
                 currentStep--; 
                 updateUI(); 
-                window.scrollTo(0, 0); 
+                scrollToTop(); 
             } 
         }
 
@@ -913,7 +927,7 @@
             }
             renderSatQuestion(); 
             updateUI(); 
-            window.scrollTo(0, 0);
+            scrollToTop();
         }
 
         function submitExtraAndProceed() {
@@ -926,7 +940,7 @@
             }
             renderSatQuestion(); 
             updateUI(); 
-            window.scrollTo(0, 0);
+            scrollToTop();
         }
 
         function selectAnswer(stepNum, answer) {
@@ -1161,7 +1175,7 @@
             
             resultDiv.classList.add('step-active');
             document.getElementById('progressBar').style.width = '100%';
-            window.scrollTo(0, 0); 
+            scrollToTop(); 
         }
 
         window.onload = () => { buildQuestionsUI(); initializeLiff(); };
