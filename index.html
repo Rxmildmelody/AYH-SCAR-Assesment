@@ -9,6 +9,16 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+        /* ============================================================
+           ELDERLY-FRIENDLY BASE SCALE
+           Tailwind's utility classes are rem-based, so bumping the root
+           font-size scales nearly all existing text, padding, and gaps
+           app-wide (readable text, larger tap targets) without having
+           to hand-edit every single class in the file.
+           ============================================================ */
+        html { font-size: 118%; }
+
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .step-container { display: none; }
         .step-active { display: block; animation: fadeIn 0.3s ease-in-out; }
@@ -20,6 +30,97 @@
             animation: stripe-motion 1s linear infinite;
         }
         @keyframes stripe-motion { 0% { background-position: 1rem 0; } 100% { background-position: 0 0; } }
+
+        /* ============================================================
+           QUESTION IMAGE (4:5, object-fit: contain, rounded corners)
+           ============================================================ */
+        .question-image-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            aspect-ratio: 4 / 5;
+            margin: 0 auto;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            background-color: #f8fafc;
+            border: 2px dashed #cbd5e1;
+        }
+        .question-image {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .question-image-fallback {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            color: #94a3b8;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        /* ============================================================
+           ELDERLY-FRIENDLY ANSWER BUTTONS (large, full-width, stacked)
+           ============================================================ */
+        .answer-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem 1.25rem;
+            border-radius: 1.25rem;
+            border-width: 3px;
+            border-color: #e2e8f0;
+            background-color: #ffffff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+        .answer-btn:active { transform: scale(0.98); }
+        .answer-btn .answer-icon { font-size: 1.75rem; flex-shrink: 0; }
+        .answer-btn .answer-label { font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
+
+        /* ============================================================
+           SATISFACTION EMOJI ROW — single row, always, at any width.
+           Uses flex + clamp() instead of a fixed grid so 6 emoji buttons
+           always fit one row from 360px phones up to tablets.
+           ============================================================ */
+        .sat-emoji-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: clamp(4px, 1.6vw, 10px);
+            width: 100%;
+        }
+        .sat-emoji-btn {
+            flex: 1 1 0;
+            min-width: 0;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: clamp(0.75rem, 3vw, 1.25rem);
+            border-width: 2.5px;
+            border-style: solid;
+            transition: all 0.2s ease;
+        }
+        .sat-emoji-btn .emoji { font-size: clamp(1.5rem, 7.5vw, 2.5rem); line-height: 1; }
+        .sat-emoji-btn .num { font-size: clamp(0.65rem, 2.8vw, 0.9rem); font-weight: 700; margin-top: 2px; }
+        .sat-emoji-btn.is-selected {
+            animation: satPop 0.45s ease-out;
+        }
+        @keyframes satPop {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.22); }
+            100% { transform: scale(1.08); }
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen max-w-lg mx-auto bg-white shadow-lg relative">
@@ -230,7 +331,7 @@
             </div>
 
             <!-- Step 6: แบบประเมินความพึงพอใจ -->
-            <div id="step-satisfaction" class="step-container bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div id="step-satisfaction" class="step-container bg-white px-3 py-5 rounded-2xl shadow-sm border border-slate-100">
                 <div class="text-center mb-6">
                     <div class="w-14 h-14 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 border border-blue-100"><i class="fa-regular fa-face-smile"></i></div>
                     <h3 class="text-xl font-bold text-slate-800">ประเมินความพึงพอใจ</h3>
@@ -247,7 +348,7 @@
                 </div>
 
                 <!-- Emojis Container -->
-                <div id="satOptionsContainer" class="grid grid-cols-3 gap-3 mb-6"></div>
+                <div id="satOptionsContainer" class="sat-emoji-row mb-6"></div>
 
                 <div id="satLegend" class="flex justify-between text-[11px] text-slate-400 font-medium mb-6 px-1">
                     <span>0 = ไม่พึงพอใจเลย</span>
@@ -613,35 +714,47 @@
                 }
 
                 const html = `
-                <div id="step-${stepNum}" class="step-container bg-white p-6 rounded-2xl">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-xs font-bold text-[#1e3a8a] bg-blue-50 px-3 py-1 rounded-full border border-blue-100">ข้อที่ ${stepNum} จาก 4</span>
+                <div id="step-${stepNum}" class="step-container bg-white p-5 rounded-2xl">
+
+                    <!-- TOP: question number + large question text -->
+                    <div class="flex justify-center mb-3">
+                        <span class="text-sm font-bold text-[#1e3a8a] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">ข้อที่ ${stepNum} จาก 4</span>
                     </div>
-                    
-                    <h3 class="text-lg font-bold text-slate-800 mb-4 leading-snug">${q.text}</h3>
-                    
-                    <div class="w-full h-36 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 mb-5">
-                        <i class="fa-regular fa-image text-3xl mb-1 text-slate-300"></i>
-                        <span class="text-xs font-medium text-slate-400">รูปภาพประกอบคำถาม</span>
-                        <span class="text-[10px] text-slate-300">(พื้นที่สำรองสำหรับใส่รูปภายหลัง)</span>
+                    <h3 class="text-xl font-bold text-slate-900 mb-5 leading-snug text-center">${q.text}</h3>
+
+                    <!-- CENTER: question image (4:5, object-fit: contain) -->
+                    <div class="question-image-wrap mb-5">
+                        <!-- QUESTION_IMAGE_${stepNum}: Replace "question${stepNum}.jpg" below with the actual image file for this question -->
+                        <img
+                            src="question${stepNum}.jpg"
+                            alt="ภาพประกอบคำถามที่ ${stepNum}"
+                            class="question-image"
+                            onload="this.nextElementSibling.style.display='none';"
+                            onerror="this.style.display='none';">
+                        <div class="question-image-fallback">
+                            <i class="fa-regular fa-image text-3xl text-slate-300"></i>
+                            <span class="text-sm font-medium text-slate-400">รูปภาพประกอบคำถาม</span>
+                            <span class="text-xs text-slate-300">(วางไฟล์ question${stepNum}.jpg แทนที่นี่)</span>
+                        </div>
                     </div>
 
                     ${photoSectionHTML}
 
-                    <div class="grid grid-cols-2 gap-3 mb-6">
-                        <button onclick="selectAnswer(${stepNum}, 'no')" id="btn-no-${stepNum}" class="py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center justify-center gap-1 shadow-sm">
-                            <i class="fa-solid fa-circle-check text-slate-300 text-lg mb-0.5" id="check-icon-no-${stepNum}"></i>
-                            <span class="text-base font-bold text-slate-700">ไม่ใช่</span>
+                    <!-- BOTTOM: large, stacked answer buttons -->
+                    <div class="flex flex-col gap-3 mb-6 mt-5">
+                        <button onclick="selectAnswer(${stepNum}, 'no')" id="btn-no-${stepNum}" class="answer-btn hover:border-emerald-400">
+                            <i class="fa-solid fa-circle-check answer-icon text-slate-300" id="check-icon-no-${stepNum}"></i>
+                            <span class="answer-label text-slate-700">ไม่ใช่</span>
                         </button>
-                        <button onclick="selectAnswer(${stepNum}, 'yes')" id="btn-yes-${stepNum}" class="py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-red-500 hover:bg-red-50/50 transition flex flex-col items-center justify-center gap-1 shadow-sm">
-                            <i class="fa-solid fa-circle-check text-slate-300 text-lg mb-0.5" id="check-icon-yes-${stepNum}"></i>
-                            <span class="text-base font-bold text-slate-700">ใช่ / มีอาการ</span>
+                        <button onclick="selectAnswer(${stepNum}, 'yes')" id="btn-yes-${stepNum}" class="answer-btn hover:border-red-400">
+                            <i class="fa-solid fa-circle-check answer-icon text-slate-300" id="check-icon-yes-${stepNum}"></i>
+                            <span class="answer-label text-slate-700">ใช่ / มีอาการ</span>
                         </button>
                     </div>
 
                     <div class="flex gap-3">
-                        <button onclick="prevStep()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3.5 rounded-xl text-sm transition"><i class="fa-solid fa-arrow-left mr-1"></i> ย้อนกลับ</button>
-                        <button onclick="nextStep()" class="flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl text-sm shadow-sm transition">ถัดไป <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                        <button onclick="prevStep()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 rounded-xl text-base transition"><i class="fa-solid fa-arrow-left mr-1"></i> ย้อนกลับ</button>
+                        <button onclick="nextStep()" class="flex-1 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-4 rounded-xl text-base shadow-sm transition">ถัดไป <i class="fa-solid fa-arrow-right ml-1"></i></button>
                     </div>
                 </div>
                 `;
@@ -672,8 +785,8 @@
                 return;
             }
 
-            // หน้าคำถามปกติ (ข้อ 1 - 5)
-            document.getElementById('satOptionsContainer').className = "grid grid-cols-3 gap-3 mb-6";
+            // หน้าคำถามปกติ (ข้อ 1 - 5) — เรียงอิโมจิแถวเดียวเสมอ (sat-emoji-row)
+            document.getElementById('satOptionsContainer').className = "sat-emoji-row mb-6";
             document.getElementById('satLegend').classList.remove('hidden');
             document.getElementById('satProgressBadge').innerText = `ข้อ ${currentSatStep + 1} / 5`;
             document.getElementById('satProgressBadge').className = `text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200`;
@@ -682,11 +795,11 @@
             let html = '';
             emojis.forEach((em, idx) => {
                 const isSelected = satAnswers[currentSatStep] === idx;
-                const bgClass = isSelected ? 'bg-blue-50 border-blue-500 scale-105 shadow-md ring-2 ring-blue-200 z-10' : 'bg-white border-slate-200 hover:bg-slate-50 opacity-90';
+                const bgClass = isSelected ? 'bg-blue-50 border-blue-500 shadow-md ring-2 ring-blue-200 z-10 is-selected' : 'bg-white border-slate-200 hover:bg-slate-50 opacity-90';
                 html += `
-                <button onclick="selectSat(${idx})" class="flex flex-col items-center justify-center py-4 rounded-2xl border-2 transition-all duration-200 transform active:scale-95 ${bgClass}">
-                    <span class="text-4xl mb-1">${em}</span>
-                    <span class="text-[13px] font-bold ${isSelected ? 'text-blue-700' : 'text-slate-500'}">${idx}</span>
+                <button onclick="selectSat(${idx})" class="sat-emoji-btn active:scale-95 ${bgClass}">
+                    <span class="emoji">${em}</span>
+                    <span class="num ${isSelected ? 'text-blue-700' : 'text-slate-500'}">${idx}</span>
                 </button>
                 `;
             });
@@ -702,13 +815,13 @@
             satAnswers[currentSatStep] = val;
             renderSatQuestion(); // แสดงสีฟ้าที่ปุ่มเพื่อยืนยันการแตะ
             
-            // หน่วงเวลาเล็กน้อยเพื่อให้ผู้ป่วยเห็นว่าระบบรับค่าแล้ว ค่อยเปลี่ยนข้อ
+            // หน่วงเวลาให้เท่ากับความยาวของอนิเมชัน satPop (~450ms) เพื่อให้ผู้ป่วยเห็นว่าระบบรับค่าแล้ว ก่อนเปลี่ยนข้อโดยอัตโนมัติ
             setTimeout(() => {
                 if (currentSatStep < 5) {
                     currentSatStep++;
                     renderSatQuestion();
                 }
-            }, 400); 
+            }, 450); 
         }
 
         function prevSatStep() {
@@ -756,7 +869,7 @@
             if (currentStep >= 1 && currentStep <= 4) {
                 const qId = questions[currentStep - 1].id;
                 const ans = answers[qId];
-                if (!ans) { alert("กรุณาเลือกคำตอบก่อนไปข้อถัดไปครับ"); return; }
+                if (!ans) { alert("กรุณาเลือกคำตอบก่อนดำเนินการต่อ"); return; }
                 
                 if (ans === 'yes' && currentStep !== 1 && photos[qId].length === 0) {
                     document.getElementById(`photo-warning-${currentStep}`).classList.remove('hidden');
@@ -820,17 +933,17 @@
             const iconNo = document.getElementById(`check-icon-no-${stepNum}`);
             const iconYes = document.getElementById(`check-icon-yes-${stepNum}`);
 
-            btnNo.className = "py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-emerald-500 transition flex flex-col items-center justify-center gap-1 shadow-sm";
-            btnYes.className = "py-4 px-3 rounded-xl border-2 border-slate-200 bg-white hover:border-red-500 transition flex flex-col items-center justify-center gap-1 shadow-sm";
-            iconNo.className = "fa-solid fa-circle-check text-slate-300 text-lg mb-0.5";
-            iconYes.className = "fa-solid fa-circle-check text-slate-300 text-lg mb-0.5";
+            btnNo.className = "answer-btn hover:border-emerald-400";
+            btnYes.className = "answer-btn hover:border-red-400";
+            iconNo.className = "fa-solid fa-circle-check answer-icon text-slate-300";
+            iconYes.className = "fa-solid fa-circle-check answer-icon text-slate-300";
 
             const photoSection = document.getElementById(`photo-section-${stepNum}`);
             const photoWarning = document.getElementById(`photo-warning-${stepNum}`);
 
             if (answer === 'no') {
-                btnNo.className = "py-4 px-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 flex flex-col items-center justify-center gap-1 shadow-sm transition";
-                iconNo.className = "fa-solid fa-circle-check text-emerald-600 text-lg mb-0.5";
+                btnNo.className = "answer-btn border-emerald-500 bg-emerald-50/60";
+                iconNo.className = "fa-solid fa-circle-check answer-icon text-emerald-600";
                 if(photoSection) { 
                     photoSection.classList.add('hidden'); 
                     photoWarning.classList.add('hidden'); 
@@ -838,8 +951,8 @@
                     renderPhotoPreview(stepNum);
                 }
             } else {
-                btnYes.className = "py-4 px-3 rounded-xl border-2 border-red-500 bg-red-50/60 flex flex-col items-center justify-center gap-1 shadow-sm transition";
-                iconYes.className = "fa-solid fa-circle-check text-red-600 text-lg mb-0.5";
+                btnYes.className = "answer-btn border-red-500 bg-red-50/60";
+                iconYes.className = "fa-solid fa-circle-check answer-icon text-red-600";
                 if(photoSection) photoSection.classList.remove('hidden');
             }
         }
